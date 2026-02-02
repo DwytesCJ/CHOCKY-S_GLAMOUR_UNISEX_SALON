@@ -1,21 +1,36 @@
 import type { Metadata } from "next";
+import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import CartDrawer from "@/components/cart/CartDrawer";
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "CHOCKY'S Ultimate Glamour | Beauty & Salon",
-  description: "Your premier destination for luxury beauty products and professional salon services in Uganda. Shop hair styling, makeup, skincare, perfumes, jewelry, and bags.",
-  keywords: "beauty, salon, makeup, skincare, hair styling, perfumes, jewelry, bags, Uganda, Kampala",
+  title: "CHOCKY'S Ultimate Glamour | Premium Beauty & Salon Services",
+  description: "Your premier destination for luxury beauty products and professional salon services in Uganda. Shop makeup, skincare, hair products, perfumes, jewelry, and bags.",
+  keywords: "beauty products Uganda, salon services Kampala, makeup, skincare, wigs, perfumes, jewelry, bags, CHOCKY'S",
   authors: [{ name: "CHOCKY'S Ultimate Glamour" }],
   openGraph: {
-    title: "CHOCKY'S Ultimate Glamour | Beauty & Salon",
+    title: "CHOCKY'S Ultimate Glamour | Premium Beauty & Salon Services",
     description: "Your premier destination for luxury beauty products and professional salon services in Uganda.",
-    type: "website",
-    locale: "en_UG",
+    url: "https://chockys.ug",
     siteName: "CHOCKY'S Ultimate Glamour",
+    locale: "en_UG",
+    type: "website",
   },
 };
 
@@ -25,26 +40,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${montserrat.variable} ${playfair.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
         />
       </head>
-      <body className="antialiased">
+      <body className="font-body antialiased bg-white text-dark-900">
         <CartProvider>
           <WishlistProvider>
-            <div className="flex flex-col min-h-screen">
+            <div className="min-h-screen flex flex-col">
               <Header />
-              <main className="flex-grow">{children}</main>
+              <main className="flex-1">
+                {children}
+              </main>
               <Footer />
+              <CartDrawer />
             </div>
           </WishlistProvider>
         </CartProvider>

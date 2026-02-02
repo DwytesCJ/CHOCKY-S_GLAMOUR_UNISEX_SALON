@@ -1,65 +1,434 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import ProductCard from '@/components/products/ProductCard';
+
+// Hero Slides Data
+const heroSlides = [
+  {
+    id: 1,
+    image: '/images/hero/pexels-cottonbro-3993117.jpg',
+    title: 'Discover Your',
+    highlight: 'Ultimate Glamour',
+    subtitle: 'Premium beauty products and professional salon services tailored for you',
+    cta: 'Shop Now',
+    ctaLink: '/shop',
+  },
+  {
+    id: 2,
+    image: '/images/hero/pexels-artbovich-7750099.jpg',
+    title: 'Luxury Hair',
+    highlight: 'Styling & Wigs',
+    subtitle: 'Transform your look with our premium collection of wigs and hair products',
+    cta: 'Explore Hair',
+    ctaLink: '/shop/hair',
+  },
+  {
+    id: 3,
+    image: '/images/hero/pexels-artbovich-7195812.jpg',
+    title: 'Book Your',
+    highlight: 'Salon Experience',
+    subtitle: 'Professional makeup, hair styling, and beauty treatments by expert stylists',
+    cta: 'Book Appointment',
+    ctaLink: '/salon/booking',
+  },
+];
+
+// Categories Data
+const categories = [
+  { id: 1, name: 'Hair Styling', image: '/images/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg', href: '/shop/hair', count: '120+' },
+  { id: 2, name: 'Makeup', image: '/images/categories/pexels-shattha-pilabut-38930-135620.jpg', href: '/shop/makeup', count: '200+' },
+  { id: 3, name: 'Skincare', image: '/images/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg', href: '/shop/skincare', count: '85+' },
+  { id: 4, name: 'Perfumes', image: '/images/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg', href: '/shop/perfumes', count: '60+' },
+  { id: 5, name: 'Jewelry', image: '/images/categories/pexels-hert-33561789.jpg', href: '/shop/jewelry', count: '150+' },
+  { id: 6, name: 'Bags', image: '/images/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg', href: '/shop/bags', count: '75+' },
+];
+
+// Featured Products Data
+const featuredProducts = [
+  { id: '1', name: 'Luxury Matte Lipstick', price: 45000, originalPrice: 65000, image: '/images/products/makeup/pexels-828860-2536009.jpg', category: 'Makeup', badge: 'Sale' as const, rating: 4.8, reviews: 124 },
+  { id: '2', name: 'HD Lace Front Wig', price: 450000, image: '/images/products/hair/pexels-venus-31818416.jpg', category: 'Hair', badge: 'Bestseller' as const, rating: 4.9, reviews: 89 },
+  { id: '3', name: 'Vitamin C Serum', price: 120000, image: '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg', category: 'Skincare', badge: 'New' as const, rating: 4.7, reviews: 56 },
+  { id: '4', name: 'Designer Handbag', price: 285000, originalPrice: 350000, image: '/images/products/bags/pexels-dhanno-22432991.jpg', category: 'Bags', badge: 'Sale' as const, rating: 4.6, reviews: 42 },
+  { id: '5', name: 'Gold Hoop Earrings', price: 75000, image: '/images/products/jewelry/pexels-castorlystock-3641059.jpg', category: 'Jewelry', badge: 'Trending' as const, rating: 4.8, reviews: 78 },
+  { id: '6', name: 'Luxury Perfume Set', price: 185000, image: '/images/products/perfumes/pexels-valeriya-724635.jpg', category: 'Perfumes', badge: 'New' as const, rating: 4.9, reviews: 34 },
+  { id: '7', name: 'Foundation Kit', price: 95000, image: '/images/products/makeup/pexels-shiny-diamond-3373734.jpg', category: 'Makeup', rating: 4.5, reviews: 167 },
+  { id: '8', name: 'Braiding Hair Extensions', price: 35000, image: '/images/products/hair/pexels-rdne-6923351.jpg', category: 'Hair', rating: 4.7, reviews: 203 },
+];
+
+// Testimonials Data
+const testimonials = [
+  { id: 1, name: 'Sarah Nakamya', role: 'Loyal Customer', image: '/images/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg', text: "CHOCKY'S has completely transformed my beauty routine. The quality of products is amazing!", rating: 5 },
+  { id: 2, name: 'Grace Achieng', role: 'Bridal Client', image: '/images/testimonials/pexels-artbovich-7195799.jpg', text: 'My wedding makeup was absolutely perfect! The team made me feel like a queen.', rating: 5 },
+  { id: 3, name: 'Diana Opio', role: 'Regular Client', image: '/images/testimonials/pexels-enginakyurt-3065209.jpg', text: 'I love the variety of products available. Everything is authentic and reasonably priced.', rating: 5 },
+];
+
+export default function HomePage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-rotate hero slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index);
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="overflow-x-hidden">
+      {/* Hero Section */}
+      <section className="relative h-[80vh] sm:h-[85vh] min-h-[500px] max-h-[800px]">
+        {/* Background Slides */}
+        {heroSlides.map((slide, index) => (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 transition-opacity duration-700 ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
           >
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src={slide.image}
+              alt={slide.title}
+              fill
+              className="object-cover"
+              priority={index === 0}
+              sizes="100vw"
+              quality={75}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {/* Lighter gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/60 via-rose-gold/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+          </div>
+        ))}
+
+        {/* Hero Content */}
+        <div className="relative h-full container mx-auto px-4 flex items-center">
+          <div className="max-w-xl lg:max-w-2xl text-white">
+            <span className="inline-block px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-medium mb-4">
+              Welcome to CHOCKY&apos;S
+            </span>
+            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight">
+              {heroSlides[currentSlide].title}{' '}
+              <span className="text-cream">{heroSlides[currentSlide].highlight}</span>
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 leading-relaxed">
+              {heroSlides[currentSlide].subtitle}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={heroSlides[currentSlide].ctaLink}
+                className="bg-primary text-white hover:bg-primary/90 px-5 sm:px-8 py-3 rounded-xl font-semibold transition-colors inline-flex items-center gap-2 shadow-lg"
+              >
+                {heroSlides[currentSlide].cta}
+                <i className="fas fa-arrow-right text-sm"></i>
+              </Link>
+              <Link
+                href="/salon"
+                className="bg-white/20 backdrop-blur-sm border-2 border-white text-white hover:bg-white hover:text-primary px-5 sm:px-8 py-3 rounded-xl font-semibold transition-colors"
+              >
+                Book Salon
+              </Link>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Slide Indicators */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          {heroSlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`h-2.5 rounded-full transition-all duration-300 ${
+                index === currentSlide ? 'bg-white w-8' : 'bg-white/50 w-2.5 hover:bg-white/75'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Features Bar */}
+      <section className="bg-white py-4 sm:py-6 shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { icon: 'fas fa-truck', title: 'Free Delivery', desc: 'On orders over UGX 100k' },
+              { icon: 'fas fa-shield-alt', title: '100% Authentic', desc: 'Genuine products only' },
+              { icon: 'fas fa-undo', title: 'Easy Returns', desc: '14-day return policy' },
+              { icon: 'fas fa-headset', title: '24/7 Support', desc: 'WhatsApp & Phone' },
+            ].map((feature, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-rose-gold rounded-full flex items-center justify-center text-white flex-shrink-0">
+                  <i className={`${feature.icon} text-sm sm:text-base`}></i>
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{feature.title}</h4>
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Categories Section */}
+      <section className="py-12 sm:py-16 bg-cream">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Explore</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">Shop by Category</h2>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">Discover our curated collection of beauty essentials</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                href={category.href}
+                className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden"
+              >
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 text-white">
+                  <h3 className="font-semibold text-sm sm:text-base lg:text-lg">{category.name}</h3>
+                  <p className="text-xs sm:text-sm text-white/80">{category.count} Products</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Products Section */}
+      <section className="py-12 sm:py-16">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 sm:mb-12">
+            <div>
+              <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Trending Now</span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">Featured Products</h2>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">Handpicked favorites our customers love</p>
+            </div>
+            <Link
+              href="/shop"
+              className="mt-4 sm:mt-0 inline-flex items-center gap-2 text-primary font-semibold hover:gap-3 transition-all text-sm sm:text-base"
+            >
+              View All Products <i className="fas fa-arrow-right"></i>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Promo Banner */}
+      <section className="relative py-16 sm:py-20 overflow-hidden">
+        <Image
+          src="/images/banners/pexels-cottonbro-3993134.jpg"
+          alt="Special Offer"
+          fill
+          className="object-cover"
+          sizes="100vw"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-rose-gold/80 to-burgundy/90" />
+        <div className="relative container mx-auto px-4">
+          <div className="max-w-xl text-white">
+            <span className="inline-block px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-medium mb-4">
+              Limited Time Offer
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mb-4">
+              Get 20% Off Your First Order
+            </h2>
+            <p className="text-base sm:text-lg text-white/90 mb-6">
+              Join our Glamour Club and enjoy exclusive discounts, early access to new arrivals, and special member perks.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/shop" className="bg-white text-primary hover:bg-gray-100 px-6 py-3 rounded-xl font-semibold transition-colors">
+                Shop Now
+              </Link>
+              <Link href="/rewards" className="border-2 border-white text-white hover:bg-white hover:text-primary px-6 py-3 rounded-xl font-semibold transition-colors">
+                Join Rewards
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Salon Services Preview */}
+      <section className="py-12 sm:py-16 bg-cream">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div>
+              <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Our Services</span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">Professional Salon Services</h2>
+              <p className="text-gray-600 mt-4 mb-6 text-sm sm:text-base leading-relaxed">
+                Experience luxury beauty treatments by our expert stylists. From stunning hair transformations 
+                to flawless makeup artistry, we bring out your natural beauty.
+              </p>
+              
+              <div className="space-y-3 mb-6">
+                {[
+                  { icon: 'fas fa-cut', name: 'Hair Styling & Treatments', price: 'From UGX 50,000' },
+                  { icon: 'fas fa-magic', name: 'Makeup Services', price: 'From UGX 80,000' },
+                  { icon: 'fas fa-spa', name: 'Skin Treatments', price: 'From UGX 100,000' },
+                  { icon: 'fas fa-gem', name: 'Bridal Packages', price: 'From UGX 500,000' },
+                ].map((service, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 sm:p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-rose-gold rounded-full flex items-center justify-center text-white flex-shrink-0">
+                      <i className={`${service.icon} text-sm sm:text-base`}></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm sm:text-base text-gray-900">{service.name}</h4>
+                      <p className="text-xs sm:text-sm text-gray-500">{service.price}</p>
+                    </div>
+                    <i className="fas fa-chevron-right text-gray-400 text-sm"></i>
+                  </div>
+                ))}
+              </div>
+
+              <Link href="/salon/booking" className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                Book Appointment <i className="fas fa-calendar-alt"></i>
+              </Link>
+            </div>
+
+            <div className="relative">
+              <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="/images/banners/pexels-artbovich-7750115.jpg"
+                  alt="Salon Services"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                  loading="lazy"
+                />
+              </div>
+              {/* Floating Card */}
+              <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-white p-4 sm:p-6 rounded-xl shadow-xl max-w-[200px] sm:max-w-xs">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden bg-gray-200">
+                        <Image
+                          src="/images/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg"
+                          alt="Client"
+                          width={40}
+                          height={40}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-xs sm:text-sm text-gray-600">+500 Happy Clients</span>
+                </div>
+                <div className="flex items-center gap-1 text-primary">
+                  {[...Array(5)].map((_, i) => (
+                    <i key={i} className="fas fa-star text-sm"></i>
+                  ))}
+                  <span className="ml-2 text-gray-900 font-semibold text-sm">4.9/5</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-12 sm:py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Testimonials</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">What Our Clients Say</h2>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">Real stories from our satisfied customers</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {testimonials.map((testimonial) => (
+              <div key={testimonial.id} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-1 text-primary mb-3">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <i key={i} className="fas fa-star text-sm"></i>
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">&ldquo;{testimonial.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                    <Image
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      width={48}
+                      height={48}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm sm:text-base">{testimonial.name}</h4>
+                    <p className="text-xs sm:text-sm text-gray-500">{testimonial.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Instagram Feed */}
+      <section className="py-12 sm:py-16 bg-cream">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Follow Us</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">@chockys_glamour</h2>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">Join our community and share your glamour moments</p>
+          </div>
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+            {[
+              '/images/products/makeup/pexels-828860-2536009.jpg',
+              '/images/products/jewelry/pexels-castorlystock-3641059.jpg',
+              '/images/products/hair/pexels-venus-31818416.jpg',
+              '/images/products/perfumes/pexels-valeriya-724635.jpg',
+              '/images/products/bags/pexels-dhanno-22432992.jpg',
+              '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
+            ].map((image, index) => (
+              <a
+                key={index}
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative aspect-square rounded-lg sm:rounded-xl overflow-hidden group"
+              >
+                <Image
+                  src={image}
+                  alt={`Instagram ${index + 1}`}
+                  fill
+                  sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/50 transition-colors flex items-center justify-center">
+                  <i className="fab fa-instagram text-xl sm:text-2xl text-white opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
