@@ -64,26 +64,26 @@ export async function GET(request: NextRequest) {
       
       // Total revenue
       prisma.order.aggregate({
-        where: { status: { in: ['DELIVERED', 'COMPLETED'] } },
-        _sum: { total: true },
+        where: { status: 'DELIVERED' },
+        _sum: { totalAmount: true },
       }),
       
       // This month's revenue
       prisma.order.aggregate({
         where: {
           createdAt: { gte: thisMonth },
-          status: { in: ['DELIVERED', 'COMPLETED'] },
+          status: 'DELIVERED',
         },
-        _sum: { total: true },
+        _sum: { totalAmount: true },
       }),
       
       // Last month's revenue
       prisma.order.aggregate({
         where: {
           createdAt: { gte: lastMonth, lte: lastMonthEnd },
-          status: { in: ['DELIVERED', 'COMPLETED'] },
+          status: 'DELIVERED',
         },
-        _sum: { total: true },
+        _sum: { totalAmount: true },
       }),
       
       // Total customers
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       // Today's appointments
       prisma.appointment.count({
         where: {
-          appointmentDate: {
+          date: {
             gte: today,
             lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
           },
@@ -171,8 +171,11 @@ export async function GET(request: NextRequest) {
       ? ((monthOrders - lastMonthOrders) / lastMonthOrders) * 100
       : 100;
     
-    const revenueGrowth = (lastMonthRevenue._sum.total || 0) > 0
-      ? (((monthRevenue._sum.total || 0) - (lastMonthRevenue._sum.total || 0)) / (lastMonthRevenue._sum.total || 1)) * 100
+    const lastMonthRev = Number(lastMonthRevenue._sum.totalAmount) || 0;
+    const currentMonthRev = Number(monthRevenue._sum.totalAmount) || 0;
+    
+    const revenueGrowth = lastMonthRev > 0
+      ? ((currentMonthRev - lastMonthRev) / lastMonthRev) * 100
       : 100;
     
     return NextResponse.json({
@@ -183,8 +186,8 @@ export async function GET(request: NextRequest) {
           todayOrders,
           monthOrders,
           orderGrowth: Math.round(orderGrowth * 10) / 10,
-          totalRevenue: totalRevenue._sum.total || 0,
-          monthRevenue: monthRevenue._sum.total || 0,
+          totalRevenue: totalRevenue._sum.totalAmount || 0,
+          monthRevenue: monthRevenue._sum.totalAmount || 0,
           revenueGrowth: Math.round(revenueGrowth * 10) / 10,
           totalCustomers,
           newCustomersMonth,
@@ -200,7 +203,7 @@ export async function GET(request: NextRequest) {
           customer: order.user
             ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || order.user.email
             : order.email,
-          total: order.total,
+          total: order.totalAmount,
           status: order.status,
           createdAt: order.createdAt,
         })),

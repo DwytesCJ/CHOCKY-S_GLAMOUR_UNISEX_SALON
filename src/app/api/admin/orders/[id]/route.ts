@@ -40,13 +40,11 @@ export async function GET(
             },
           },
         },
-        payment: true,
-        shippingAddress: true,
-        billingAddress: true,
+        payments: true,
+        address: true,
         statusHistory: {
           orderBy: { createdAt: 'desc' },
         },
-        coupon: true,
       },
     });
     
@@ -153,8 +151,8 @@ export async function PUT(
         data: {
           orderId: id,
           status,
-          notes: notes || `Status changed from ${currentOrder.status} to ${status}`,
-          changedBy: session.user.id,
+          note: notes || `Status changed from ${currentOrder.status} to ${status}`,
+          createdBy: session.user.id,
         },
       });
     }

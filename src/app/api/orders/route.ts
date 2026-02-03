@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          payment: true,
+          payments: true,
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
@@ -113,21 +113,19 @@ export async function POST(request: NextRequest) {
       const product = products.find((p: any) => p.id === item.productId);
       if (!product) throw new Error('Product not found');
       
-      const price = product.isOnSale && product.compareAtPrice 
-        ? product.price 
-        : product.price;
+      const price = Number(product.price);
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
       
       return {
         productId: product.id,
         productName: product.name,
-        productImage: item.image || '',
         variantId: item.variantId,
         variantName: item.variantName,
+        sku: product.sku || '',
         quantity: item.quantity,
         price,
-        total: itemTotal,
+        totalPrice: itemTotal,
       };
     });
     
@@ -145,20 +143,24 @@ export async function POST(request: NextRequest) {
       });
       
       if (coupon) {
-        if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
+        const minAmount = Number(coupon.minOrderAmount) || 0;
+        if (minAmount > 0 && subtotal < minAmount) {
           return NextResponse.json(
-            { success: false, error: `Minimum order amount is ${coupon.minOrderAmount} UGX` },
+            { success: false, error: `Minimum order amount is ${minAmount} UGX` },
             { status: 400 }
           );
         }
         
+        const discValue = Number(coupon.discountValue);
+        const maxDisc = Number(coupon.maxDiscountAmount) || Infinity;
+        
         if (coupon.discountType === 'PERCENTAGE') {
-          discount = (subtotal * coupon.discountValue) / 100;
-          if (coupon.maxDiscountAmount && discount > coupon.maxDiscountAmount) {
-            discount = coupon.maxDiscountAmount;
+          discount = (subtotal * discValue) / 100;
+          if (discount > maxDisc) {
+            discount = maxDisc;
           }
         } else {
-          discount = coupon.discountValue;
+          discount = discValue;
         }
         
         couponId = coupon.id;
@@ -201,33 +203,25 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
-        userId: session?.user?.id,
-        email: body.email || session?.user?.email,
-        phone: body.phone,
+        userId: session?.user?.id as string,
+        addressId: shippingAddressId,
         status: 'PENDING',
         subtotal,
-        discount,
-        tax,
+        discountAmount: discount + pointsDiscount,
+        taxAmount: tax,
         shippingCost: shippingCost || 0,
-        total,
-        currency: 'UGX',
-        shippingAddressId,
-        billingAddressId,
-        shippingMethod: shippingMethod || 'STANDARD',
-        paymentMethod: paymentMethod || 'MOBILE_MONEY',
+        totalAmount: total,
+        shippingMethod: (shippingMethod || 'STANDARD') as any,
+        paymentMethod: (paymentMethod || 'MTN_MOBILE_MONEY') as any,
         notes,
-        couponId,
         couponCode,
-        couponDiscount: discount,
-        pointsUsed,
-        pointsDiscount,
         items: {
           create: orderItems,
         },
         statusHistory: {
           create: {
             status: 'PENDING',
-            notes: 'Order placed',
+            note: 'Order placed',
           },
         },
       },
@@ -274,7 +268,7 @@ export async function POST(request: NextRequest) {
         action: 'ORDER_CREATED',
         entity: 'order',
         entityId: order.id,
-        details: JSON.stringify({ orderNumber: order.orderNumber, total: order.total }),
+        details: JSON.stringify({ orderNumber: order.orderNumber, total: order.totalAmount }),
       },
     });
     

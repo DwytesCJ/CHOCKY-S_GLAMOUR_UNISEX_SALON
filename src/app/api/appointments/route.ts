@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (upcoming) {
-      where.appointmentDate = { gte: new Date() };
+      where.date = { gte: new Date() };
       where.status = { in: ['PENDING', 'CONFIRMED'] };
     }
     
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         },
         stylist: true,
       },
-      orderBy: { appointmentDate: upcoming ? 'asc' : 'desc' },
+      orderBy: { date: upcoming ? 'asc' : 'desc' },
     });
     
     return NextResponse.json({
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const {
       serviceId,
       stylistId,
-      appointmentDate,
+      date,
       appointmentTime,
       notes,
       customerName,
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     } = body;
     
     // Validate required fields
-    if (!serviceId || !appointmentDate || !appointmentTime) {
+    if (!serviceId || !date || !appointmentTime) {
       return NextResponse.json(
         { success: false, error: 'Service, date, and time are required' },
         { status: 400 }
@@ -102,14 +102,14 @@ export async function POST(request: NextRequest) {
     
     // Parse appointment datetime
     const [hours, minutes] = appointmentTime.split(':').map(Number);
-    const dateTime = new Date(appointmentDate);
+    const dateTime = new Date(date);
     dateTime.setHours(hours, minutes, 0, 0);
     
     // Check if the time slot is available
     const existingAppointment = await prisma.appointment.findFirst({
       where: {
         stylistId: stylistId || undefined,
-        appointmentDate: dateTime,
+        date: dateTime,
         status: { in: ['PENDING', 'CONFIRMED'] },
       },
     });
@@ -129,19 +129,15 @@ export async function POST(request: NextRequest) {
     const appointment = await prisma.appointment.create({
       data: {
         appointmentNumber: generateAppointmentNumber(),
-        userId: session?.user?.id,
+        userId: session?.user?.id as string,
         serviceId,
         stylistId,
-        appointmentDate: dateTime,
+        date: dateTime,
         startTime: appointmentTime,
         endTime: `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`,
-        duration: service.duration,
-        price: service.price,
+        totalAmount: Number(service.price),
         status: 'PENDING',
         notes,
-        customerName: customerName || session?.user?.name,
-        customerEmail: customerEmail || session?.user?.email,
-        customerPhone,
       },
       include: {
         service: true,
