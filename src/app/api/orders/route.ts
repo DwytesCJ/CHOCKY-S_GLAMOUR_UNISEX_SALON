@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         // Increment coupon usage
         await prisma.coupon.update({
           where: { id: coupon.id },
-          data: { usedCount: { increment: 1 } },
+          data: { usageCount: { increment: 1 } },
         });
       }
     }

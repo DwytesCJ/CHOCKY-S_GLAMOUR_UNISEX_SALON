@@ -13,7 +13,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/account/login',
-    signUp: '/account/register',
     error: '/account/login',
   },
   providers: [

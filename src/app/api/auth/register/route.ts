@@ -74,17 +74,16 @@ export async function POST(request: NextRequest) {
       },
     });
     
-    // Create default reward tier for new user
-    const bronzeTier = await prisma.rewardTier.findFirst({
-      where: { name: 'Bronze' },
-    });
-    
-    if (bronzeTier) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { rewardTierId: bronzeTier.id },
-      });
-    }
+    // Create default reward tier for new user - commented out as rewardTierId doesn't exist in User model
+    // const bronzeTier = await prisma.rewardTier.findFirst({
+    //   where: { name: 'Bronze' },
+    // });
+    // if (bronzeTier) {
+    //   await prisma.user.update({
+    //     where: { id: user.id },
+    //     data: { rewardTierId: bronzeTier.id },
+    //   });
+    // }
     
     // Log activity
     await prisma.activityLog.create({

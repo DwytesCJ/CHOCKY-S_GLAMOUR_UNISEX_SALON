@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
         phone,
         subject: subject || 'General Inquiry',
         message,
-        type,
         status: 'NEW',
       },
     });

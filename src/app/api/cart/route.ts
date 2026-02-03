@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     
     // Calculate totals
     const subtotal = cartItems.reduce((sum, item) => {
-      const price = item.variant?.price || item.product.price;
+      const price = Number(item.variant?.price || item.product.price);
       return sum + (price * item.quantity);
     }, 0);
     

@@ -157,9 +157,9 @@ export async function POST(request: NextRequest) {
         productId,
         rating,
         title,
-        comment,
+        content: comment,
         images: images ? JSON.stringify(images) : null,
-        isVerifiedPurchase: !!hasPurchased,
+        isVerified: !!hasPurchased,
         isApproved: true, // Auto-approve for now, can be changed to require moderation
       },
       include: {
@@ -169,16 +169,8 @@ export async function POST(request: NextRequest) {
       },
     });
     
-    // Update product rating cache (optional optimization)
-    const avgRating = await prisma.review.aggregate({
-      where: { productId, isApproved: true },
-      _avg: { rating: true },
-    });
-    
-    await prisma.product.update({
-      where: { id: productId },
-      data: { averageRating: avgRating._avg.rating || 0 },
-    });
+    // Update product rating cache - removed as Product model doesn't have averageRating field
+    // Rating is calculated dynamically from reviews when needed
     
     // Award points for review
     if (session.user.id) {
@@ -186,7 +178,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: session.user.id,
           points: 10,
-          type: 'REVIEW',
+          type: 'EARNED_REVIEW',
           description: `Review for ${product.name}`,
         },
       });
