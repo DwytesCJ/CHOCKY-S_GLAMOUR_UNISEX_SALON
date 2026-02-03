@@ -8,10 +8,11 @@ async function main() {
 
   // Create Reward Tiers
   const bronzeTier = await prisma.rewardTier.upsert({
-    where: { name: 'Bronze' },
+    where: { slug: 'bronze' },
     update: {},
     create: {
       name: 'Bronze',
+      slug: 'bronze',
       minPoints: 0,
       pointsMultiplier: 1.0,
       benefits: JSON.stringify([
@@ -24,10 +25,11 @@ async function main() {
   });
 
   const silverTier = await prisma.rewardTier.upsert({
-    where: { name: 'Silver' },
+    where: { slug: 'silver' },
     update: {},
     create: {
       name: 'Silver',
+      slug: 'silver',
       minPoints: 500,
       pointsMultiplier: 1.25,
       benefits: JSON.stringify([
@@ -41,10 +43,11 @@ async function main() {
   });
 
   const goldTier = await prisma.rewardTier.upsert({
-    where: { name: 'Gold' },
+    where: { slug: 'gold' },
     update: {},
     create: {
       name: 'Gold',
+      slug: 'gold',
       minPoints: 1500,
       pointsMultiplier: 1.5,
       benefits: JSON.stringify([
@@ -75,11 +78,10 @@ async function main() {
       role: 'SUPER_ADMIN',
       isActive: true,
       emailVerified: new Date(),
-      rewardTierId: goldTier.id,
     },
   });
 
-  console.log('Created admin user');
+  console.log('Created admin user: admin@chockys.ug / Admin@123');
 
   // Create Categories
   const categories = await Promise.all([
@@ -90,7 +92,7 @@ async function main() {
         name: 'Hair Styling',
         slug: 'hair-styling',
         description: 'Wigs, extensions, hair care products, and styling tools',
-        image: '/images/categories/pexels-rdne-6923351.jpg',
+        image: '/images/categories/hair.jpg',
         sortOrder: 1,
       },
     }),
@@ -101,7 +103,7 @@ async function main() {
         name: 'Jewelry & Ornaments',
         slug: 'jewelry-ornaments',
         description: 'Earrings, necklaces, bracelets, rings, and jewelry sets',
-        image: '/images/categories/pexels-castorlystock-3641059.jpg',
+        image: '/images/categories/jewelry.jpg',
         sortOrder: 2,
       },
     }),
@@ -112,7 +114,7 @@ async function main() {
         name: 'Bags & Accessories',
         slug: 'bags-accessories',
         description: 'Handbags, clutches, tote bags, and wallets',
-        image: '/images/categories/pexels-dhanno-22432991.jpg',
+        image: '/images/categories/bags.jpg',
         sortOrder: 3,
       },
     }),
@@ -123,7 +125,7 @@ async function main() {
         name: 'Perfumes & Fragrances',
         slug: 'perfumes-fragrances',
         description: 'Women\'s perfumes, men\'s cologne, and gift sets',
-        image: '/images/categories/pexels-valeriya-724635.jpg',
+        image: '/images/categories/perfumes.jpg',
         sortOrder: 4,
       },
     }),
@@ -134,7 +136,7 @@ async function main() {
         name: 'Makeup',
         slug: 'makeup',
         description: 'Face, eyes, lips, nails, and makeup tools',
-        image: '/images/categories/pexels-828860-2536009.jpg',
+        image: '/images/categories/makeup.jpg',
         sortOrder: 5,
       },
     }),
@@ -145,7 +147,7 @@ async function main() {
         name: 'Skincare',
         slug: 'skincare',
         description: 'Cleansers, moisturizers, serums, and treatments',
-        image: '/images/categories/pexels-misolo-cosmetic-2588316-4841339.jpg',
+        image: '/images/categories/skincare.jpg',
         sortOrder: 6,
       },
     }),
@@ -221,7 +223,6 @@ async function main() {
       isFeatured: true,
       isNewArrival: true,
       isBestseller: true,
-      images: ['/images/products/makeup/pexels-828860-2536009.jpg'],
     },
     {
       name: 'Brazilian Body Wave Wig',
@@ -237,7 +238,6 @@ async function main() {
       isActive: true,
       isFeatured: true,
       isNewArrival: true,
-      images: ['/images/products/hair/pexels-venus-31818416.jpg'],
     },
     {
       name: 'Hydrating Face Serum',
@@ -253,7 +253,6 @@ async function main() {
       isActive: true,
       isFeatured: true,
       isOnSale: true,
-      images: ['/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg'],
     },
     {
       name: 'Designer Leather Handbag',
@@ -268,7 +267,6 @@ async function main() {
       stockQuantity: 15,
       isActive: true,
       isFeatured: true,
-      images: ['/images/products/bags/pexels-dhanno-22432991.jpg'],
     },
     {
       name: 'Floral Eau de Parfum',
@@ -284,7 +282,6 @@ async function main() {
       isActive: true,
       isFeatured: true,
       isBestseller: true,
-      images: ['/images/products/perfumes/pexels-valeriya-724635.jpg'],
     },
     {
       name: 'Crystal Drop Earrings',
@@ -300,34 +297,15 @@ async function main() {
       isActive: true,
       isFeatured: true,
       isNewArrival: true,
-      images: ['/images/products/jewelry/pexels-castorlystock-3641059.jpg'],
     },
   ];
 
   for (const productData of products) {
-    const { images, ...data } = productData;
-    const product = await prisma.product.upsert({
-      where: { slug: data.slug },
+    await prisma.product.upsert({
+      where: { slug: productData.slug },
       update: {},
-      create: data,
+      create: productData,
     });
-
-    // Create product images
-    if (images && images.length > 0) {
-      await prisma.productImage.deleteMany({
-        where: { productId: product.id },
-      });
-      
-      await prisma.productImage.createMany({
-        data: images.map((url, index) => ({
-          productId: product.id,
-          url,
-          alt: product.name,
-          sortOrder: index,
-          isPrimary: index === 0,
-        })),
-      });
-    }
   }
 
   console.log('Created products');
@@ -373,28 +351,26 @@ async function main() {
 
   // Create Salon Services
   const services = [
-    { name: 'Hair Styling', price: 50000, duration: 60, categoryId: serviceCategories[0].id },
-    { name: 'Hair Coloring', price: 150000, duration: 180, categoryId: serviceCategories[0].id },
-    { name: 'Wig Installation', price: 80000, duration: 90, categoryId: serviceCategories[0].id },
-    { name: 'Braiding & Plaiting', price: 100000, duration: 240, categoryId: serviceCategories[0].id },
-    { name: 'Bridal Makeup', price: 250000, duration: 120, categoryId: serviceCategories[1].id },
-    { name: 'Event Makeup', price: 100000, duration: 60, categoryId: serviceCategories[1].id },
-    { name: 'Classic Facial', price: 80000, duration: 60, categoryId: serviceCategories[2].id },
-    { name: 'Anti-Aging Facial', price: 120000, duration: 90, categoryId: serviceCategories[2].id },
+    { name: 'Hair Styling', slug: 'hair-styling-service', price: 50000, duration: 60, categoryId: serviceCategories[0].id },
+    { name: 'Hair Coloring', slug: 'hair-coloring', price: 150000, duration: 180, categoryId: serviceCategories[0].id },
+    { name: 'Wig Installation', slug: 'wig-installation', price: 80000, duration: 90, categoryId: serviceCategories[0].id },
+    { name: 'Braiding & Plaiting', slug: 'braiding-plaiting', price: 100000, duration: 240, categoryId: serviceCategories[0].id },
+    { name: 'Bridal Makeup', slug: 'bridal-makeup', price: 250000, duration: 120, categoryId: serviceCategories[1].id },
+    { name: 'Event Makeup', slug: 'event-makeup', price: 100000, duration: 60, categoryId: serviceCategories[1].id },
+    { name: 'Classic Facial', slug: 'classic-facial', price: 80000, duration: 60, categoryId: serviceCategories[2].id },
+    { name: 'Anti-Aging Facial', slug: 'anti-aging-facial', price: 120000, duration: 90, categoryId: serviceCategories[2].id },
   ];
 
   for (const service of services) {
     await prisma.salonService.upsert({
-      where: { 
-        name_categoryId: { 
-          name: service.name, 
-          categoryId: service.categoryId 
-        } 
-      },
+      where: { slug: service.slug },
       update: {},
       create: {
-        ...service,
-        slug: service.name.toLowerCase().replace(/\s+/g, '-'),
+        name: service.name,
+        slug: service.slug,
+        price: service.price,
+        duration: service.duration,
+        categoryId: service.categoryId,
         description: `Professional ${service.name.toLowerCase()} service`,
         isActive: true,
       },
@@ -404,60 +380,26 @@ async function main() {
   console.log('Created salon services');
 
   // Create Site Settings
-  await prisma.siteSetting.upsert({
-    where: { key: 'business_name' },
-    update: {},
-    create: {
-      key: 'business_name',
-      value: "CHOCKY'S Ultimate Glamour Unisex Salon",
-      type: 'text',
-    },
-  });
+  const settings = [
+    { key: 'business_name', value: "CHOCKY'S Ultimate Glamour Unisex Salon", type: 'text', group: 'general' },
+    { key: 'business_address', value: 'Annex Building (Wandegeya), Kampala, Uganda', type: 'text', group: 'general' },
+    { key: 'business_phone', value: '+256703878485', type: 'text', group: 'general' },
+    { key: 'business_email', value: 'josephchandin@gmail.com', type: 'text', group: 'general' },
+    { key: 'social_instagram', value: 'https://www.instagram.com/chockys_ultimate_glamour/', type: 'text', group: 'social' },
+  ];
 
-  await prisma.siteSetting.upsert({
-    where: { key: 'business_address' },
-    update: {},
-    create: {
-      key: 'business_address',
-      value: 'Annex Building (Wandegeya), Kampala, Uganda',
-      type: 'text',
-    },
-  });
-
-  await prisma.siteSetting.upsert({
-    where: { key: 'business_phone' },
-    update: {},
-    create: {
-      key: 'business_phone',
-      value: '+256703878485',
-      type: 'text',
-    },
-  });
-
-  await prisma.siteSetting.upsert({
-    where: { key: 'business_email' },
-    update: {},
-    create: {
-      key: 'business_email',
-      value: 'josephchandin@gmail.com',
-      type: 'text',
-    },
-  });
-
-  await prisma.siteSetting.upsert({
-    where: { key: 'social_instagram' },
-    update: {},
-    create: {
-      key: 'social_instagram',
-      value: 'https://www.instagram.com/chockys_ultimate_glamour/',
-      type: 'text',
-    },
-  });
+  for (const setting of settings) {
+    await prisma.siteSetting.upsert({
+      where: { key: setting.key },
+      update: {},
+      create: setting,
+    });
+  }
 
   console.log('Created site settings');
 
   // Create Blog Categories
-  const blogCategories = await Promise.all([
+  await Promise.all([
     prisma.blogCategory.upsert({
       where: { slug: 'tutorials' },
       update: {},
@@ -474,9 +416,9 @@ async function main() {
       create: { name: 'Trends', slug: 'trends' },
     }),
     prisma.blogCategory.upsert({
-      where: { slug: 'skincare' },
+      where: { slug: 'skincare-blog' },
       update: {},
-      create: { name: 'Skincare', slug: 'skincare' },
+      create: { name: 'Skincare', slug: 'skincare-blog' },
     }),
   ]);
 
@@ -516,12 +458,10 @@ async function main() {
     },
   ];
 
-  for (const faq of faqs) {
-    await prisma.fAQ.upsert({
-      where: { question: faq.question },
-      update: {},
-      create: {
-        ...faq,
+  for (let i = 0; i < faqs.length; i++) {
+    await prisma.fAQ.create({
+      data: {
+        ...faqs[i],
         isActive: true,
       },
     });
@@ -529,7 +469,15 @@ async function main() {
 
   console.log('Created FAQs');
 
+  console.log('');
+  console.log('========================================');
   console.log('Database seed completed successfully!');
+  console.log('========================================');
+  console.log('');
+  console.log('Admin Login Credentials:');
+  console.log('Email: admin@chockys.ug');
+  console.log('Password: Admin@123');
+  console.log('');
 }
 
 main()
