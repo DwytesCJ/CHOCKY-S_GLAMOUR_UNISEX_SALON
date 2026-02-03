@@ -3,12 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions, isStaff } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
 // GET /api/admin/orders/[id] - Get order details
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -72,7 +71,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // PUT /api/admin/orders/[id] - Update order status
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     
