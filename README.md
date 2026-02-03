@@ -37,12 +37,19 @@ A modern, full-stack e-commerce platform for beauty products and salon services,
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 15, React 19, TypeScript
+- **Frontend**: Next.js 15+, React 19, TypeScript
 - **Styling**: Tailwind CSS v4
 - **Database**: MySQL with Prisma ORM
 - **Authentication**: NextAuth.js
 - **Icons**: Lucide React
 - **Deployment**: Vercel
+
+## 🔧 Recent Updates (Next.js 15 Migration)
+
+This project has been updated to be compatible with Next.js 15/16. Key changes include:
+- **Async Dynamic Route Params**: Updated all Route Handlers (`api/*`) to await `params` as required by Next.js 15.
+- **Prisma Schema Fixes**: Resolved field naming mismatches in Order and Blog routes to align with `schema.prisma`.
+- **Blog Status Update**: Migrated blog queries to use the `status` enum (`PUBLISHED`) instead of the legacy `isPublished` boolean.
 
 ## 📦 Installation
 
