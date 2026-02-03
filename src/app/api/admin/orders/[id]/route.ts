@@ -4,7 +4,7 @@ import { authOptions, isStaff } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/admin/orders/[id] - Get order details
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
     
-    const { id } = params;
+    const { id } = await params;
     
     const order = await prisma.order.findUnique({
       where: { id },
@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
     
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { status, notes, trackingNumber, trackingUrl } = body;
     
@@ -159,13 +159,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     
     // Award points for completed orders
     if (status === 'DELIVERED' && order.userId) {
-      const pointsEarned = Math.floor(order.total / 1000); // 1 point per 1000 UGX
+      const pointsEarned = Math.floor(Number(order.totalAmount) / 1000); // 1 point per 1000 UGX
       
       await prisma.rewardPoint.create({
         data: {
           userId: order.userId,
           points: pointsEarned,
-          type: 'PURCHASE',
+          type: 'EARNED_PURCHASE',
           description: `Points earned from order ${order.orderNumber}`,
           orderId: order.id,
         },

@@ -4,7 +4,7 @@ import { authOptions, isStaff } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/admin/products/[id] - Get product details
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
     
-    const { id } = params;
+    const { id } = await params;
     
     const product = await prisma.product.findUnique({
       where: { id },
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
     
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     
     // Get current product
@@ -205,7 +205,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
     
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const permanent = searchParams.get('permanent') === 'true';
     

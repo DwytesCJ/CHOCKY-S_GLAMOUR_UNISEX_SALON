@@ -2,23 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 interface RouteParams {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // GET /api/blog/[slug] - Get a single blog post
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     
     const post = await prisma.blogPost.findFirst({
       where: {
         OR: [{ id: slug }, { slug }],
-        isPublished: true,
+        status: 'PUBLISHED',
       },
       include: {
-        author: {
-          select: { id: true, firstName: true, lastName: true, avatar: true, bio: true },
-        },
         category: { select: { id: true, name: true, slug: true } },
         comments: {
           where: { isApproved: true, parentId: null },
@@ -61,7 +58,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       where: {
         categoryId: post.categoryId,
         id: { not: post.id },
-        isPublished: true,
+        status: 'PUBLISHED',
       },
       select: {
         id: true,
@@ -70,7 +67,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         excerpt: true,
         featuredImage: true,
         publishedAt: true,
-        readTime: true,
       },
       orderBy: { publishedAt: 'desc' },
       take: 3,
@@ -81,13 +77,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       data: {
         ...post,
         author: {
-          id: post.author.id,
-          name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim(),
-          avatar: post.author.avatar,
-          bio: post.author.bio,
+          id: post.authorId,
+          name: post.authorName,
+          avatar: post.authorImage,
+          bio: '', // Bio not available in simplified author model
         },
         commentCount: post._count.comments,
         likeCount: post._count.likes,
+        readTime: '5 min read', // Missing in schema
         relatedPosts,
         _count: undefined,
       },

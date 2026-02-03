@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/products/[id] - Get a single product by ID or slug
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // Try to find by ID first, then by slug
     const product = await prisma.product.findFirst({
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/products/[id] - Update a product (Admin only)
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     
     const product = await prisma.product.update({
@@ -147,7 +147,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/products/[id] - Delete a product (Admin only)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // Soft delete by setting isActive to false
     const product = await prisma.product.update({

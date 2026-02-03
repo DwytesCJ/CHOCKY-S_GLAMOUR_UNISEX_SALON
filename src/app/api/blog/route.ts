@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get('featured') === 'true';
     
     const where: any = {
-      isPublished: true,
+      status: 'PUBLISHED',
       publishedAt: { lte: new Date() },
     };
     
@@ -36,9 +36,6 @@ export async function GET(request: NextRequest) {
       prisma.blogPost.findMany({
         where,
         include: {
-          author: {
-            select: { id: true, firstName: true, lastName: true, avatar: true },
-          },
           category: { select: { id: true, name: true, slug: true } },
           _count: { select: { comments: true, likes: true } },
         },
@@ -56,13 +53,13 @@ export async function GET(request: NextRequest) {
       excerpt: post.excerpt,
       featuredImage: post.featuredImage,
       author: {
-        id: post.author.id,
-        name: `${post.author.firstName || ''} ${post.author.lastName || ''}`.trim(),
-        avatar: post.author.avatar,
+        id: post.authorId,
+        name: post.authorName,
+        avatar: post.authorImage,
       },
       category: post.category,
       publishedAt: post.publishedAt,
-      readTime: post.readTime,
+      readTime: '5 min read', // Default as field is missing in schema
       isFeatured: post.isFeatured,
       commentCount: post._count.comments,
       likeCount: post._count.likes,
