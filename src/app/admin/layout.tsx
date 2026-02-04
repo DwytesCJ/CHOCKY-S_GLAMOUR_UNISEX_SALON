@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 
 const menuItems = [
@@ -26,8 +27,30 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/account/login?callbackUrl=/admin');
+    } else if (status === 'authenticated' && session?.user?.role !== 'ADMIN' && session?.user?.role !== 'SUPER_ADMIN') {
+      router.push('/');
+    }
+  }, [status, session, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' || (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'SUPER_ADMIN')) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -105,6 +128,7 @@ export default function AdminLayout({
 
           {/* Logout */}
           <button
+            onClick={() => signOut({ callbackUrl: '/' })}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
           >
             <i className="fas fa-sign-out-alt w-5 text-center"></i>
@@ -150,11 +174,15 @@ export default function AdminLayout({
             {/* User menu */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">A</span>
+                <span className="text-white font-semibold text-sm">
+                  {session?.user?.firstName?.[0] || session?.user?.email?.[0]?.toUpperCase() || 'A'}
+                </span>
               </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium text-gray-900">Admin User</p>
-                <p className="text-xs text-gray-500">Super Admin</p>
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium text-gray-900">
+                  {session?.user?.firstName} {session?.user?.lastName}
+                </p>
+                <p className="text-xs text-gray-500 capitalize">{session?.user?.role?.toLowerCase()?.replace('_', ' ')}</p>
               </div>
             </div>
           </div>

@@ -3,19 +3,43 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     remember: false,
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic
-    console.log('Login:', formData);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        router.push('/');
+        router.refresh();
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -56,6 +80,11 @@ export default function LoginPage() {
           </Link>
 
           <h1 className="font-heading text-2xl font-bold text-center mb-2">Sign In</h1>
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 text-center">
+              {error}
+            </div>
+          )}
           <p className="text-gray-600 text-center mb-8">
             Don&apos;t have an account?{' '}
             <Link href="/account/register" className="text-primary hover:underline">
@@ -112,8 +141,13 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <button type="submit" className="w-full btn btn-primary py-3">
-              Sign In
+            <button 
+              type="submit" 
+              className="w-full btn btn-primary py-3 flex items-center justify-center gap-2"
+              disabled={isLoading}
+            >
+              {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 

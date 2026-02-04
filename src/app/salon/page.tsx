@@ -1,59 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-const services = [
-  {
-    id: 1,
-    category: 'Hair Services',
-    icon: 'fa-cut',
-    items: [
-      { name: 'Hair Styling', price: 50000, duration: '1 hour', description: 'Professional styling for any occasion' },
-      { name: 'Hair Coloring', price: 150000, duration: '2-3 hours', description: 'Full color, highlights, or balayage' },
-      { name: 'Wig Installation', price: 80000, duration: '1.5 hours', description: 'Professional wig fitting and styling' },
-      { name: 'Braiding & Plaiting', price: 100000, duration: '3-5 hours', description: 'Box braids, cornrows, twists, and more' },
-      { name: 'Hair Treatment', price: 70000, duration: '1 hour', description: 'Deep conditioning and repair treatments' },
-      { name: 'Haircut & Trim', price: 30000, duration: '30 mins', description: 'Precision cuts and trims' },
-    ]
-  },
-  {
-    id: 2,
-    category: 'Makeup Services',
-    icon: 'fa-paint-brush',
-    items: [
-      { name: 'Bridal Makeup', price: 250000, duration: '2 hours', description: 'Complete bridal look with trial session' },
-      { name: 'Event Makeup', price: 100000, duration: '1 hour', description: 'Glamorous looks for special occasions' },
-      { name: 'Photoshoot Makeup', price: 150000, duration: '1.5 hours', description: 'Camera-ready professional makeup' },
-      { name: 'Makeup Lesson', price: 200000, duration: '2 hours', description: 'Learn techniques from our experts' },
-      { name: 'Natural/Everyday Makeup', price: 60000, duration: '45 mins', description: 'Subtle, everyday beauty enhancement' },
-    ]
-  },
-  {
-    id: 3,
-    category: 'Skin Treatments',
-    icon: 'fa-spa',
-    items: [
-      { name: 'Classic Facial', price: 80000, duration: '1 hour', description: 'Deep cleansing and hydration' },
-      { name: 'Anti-Aging Facial', price: 120000, duration: '1.5 hours', description: 'Rejuvenating treatment for mature skin' },
-      { name: 'Acne Treatment', price: 100000, duration: '1 hour', description: 'Targeted treatment for problem skin' },
-      { name: 'Skin Analysis', price: 50000, duration: '30 mins', description: 'Professional skin assessment' },
-      { name: 'Body Scrub', price: 90000, duration: '1 hour', description: 'Full body exfoliation treatment' },
-    ]
-  },
-  {
-    id: 4,
-    category: 'Bridal Packages',
-    icon: 'fa-gem',
-    items: [
-      { name: 'Bronze Package', price: 500000, duration: 'Full day', description: 'Hair + Makeup for bride' },
-      { name: 'Silver Package', price: 800000, duration: 'Full day', description: 'Hair + Makeup + Trial for bride' },
-      { name: 'Gold Package', price: 1200000, duration: 'Full day', description: 'Complete bridal party (up to 4)' },
-      { name: 'Platinum Package', price: 2000000, duration: '2 days', description: 'Full bridal party + pre-wedding shoot' },
-    ]
-  },
-];
 
 const stylists = [
   {
@@ -96,6 +45,26 @@ const stylists = [
 
 export default function SalonPage() {
   const [activeCategory, setActiveCategory] = useState(0);
+  const [services, setServices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch services from API
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        const res = await fetch('/api/salon/services?grouped=true');
+        const data = await res.json();
+        if (data.success) {
+          setServices(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching salon services:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchServices();
+  }, []);
 
   const formatPrice = (price: number) => {
     return `UGX ${price.toLocaleString()}`;
@@ -176,53 +145,65 @@ export default function SalonPage() {
             </p>
           </div>
 
-          {/* Category Tabs */}
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {services.map((service, index) => (
-              <button
-                key={service.id}
-                onClick={() => setActiveCategory(index)}
-                className={`px-6 py-3 rounded-full font-medium transition-all ${
-                  activeCategory === index
-                    ? 'bg-primary text-white shadow-lg'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <i className={`fas ${service.icon} mr-2`}></i>
-                {service.category}
-              </button>
-            ))}
-          </div>
-
-          {/* Services Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services[activeCategory].items.map((item, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-xl p-6 shadow-soft hover:shadow-lg transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
-                    <p className="text-sm text-gray-500">{item.description}</p>
-                  </div>
-                  <span className="text-primary font-bold">{formatPrice(item.price)}</span>
-                </div>
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <span className="text-sm text-gray-500">
-                    <i className="far fa-clock mr-1"></i>
-                    {item.duration}
-                  </span>
-                  <Link
-                    href={`/salon/booking?service=${encodeURIComponent(item.name)}`}
-                    className="text-primary font-medium hover:underline"
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : services.length > 0 ? (
+            <>
+              {/* Category Tabs */}
+              <div className="flex flex-wrap justify-center gap-3 mb-10">
+                {services.map((service, index) => (
+                  <button
+                    key={service.id}
+                    onClick={() => setActiveCategory(index)}
+                    className={`px-6 py-3 rounded-full font-medium transition-all ${
+                      activeCategory === index
+                        ? 'bg-primary text-white shadow-lg'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
-                    Book Now <i className="fas fa-arrow-right ml-1 text-sm"></i>
-                  </Link>
-                </div>
+                    <i className={`fas ${service.icon} mr-2`}></i>
+                    {service.category}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Services Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {services[activeCategory].items.map((item: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-xl p-6 shadow-soft hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
+                        <p className="text-sm text-gray-500">{item.description}</p>
+                      </div>
+                      <span className="text-primary font-bold">{formatPrice(item.price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <span className="text-sm text-gray-500">
+                        <i className="far fa-clock mr-1"></i>
+                        {item.duration}
+                      </span>
+                      <Link
+                        href={`/salon/booking?service=${encodeURIComponent(item.name)}`}
+                        className="text-primary font-medium hover:underline"
+                      >
+                        Book Now <i className="fas fa-arrow-right ml-1 text-sm"></i>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              No services available at the moment.
+            </div>
+          )}
         </div>
       </section>
 

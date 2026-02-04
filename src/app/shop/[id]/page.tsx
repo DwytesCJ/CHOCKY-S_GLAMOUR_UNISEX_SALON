@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -8,135 +8,68 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import ProductCard from '@/components/products/ProductCard';
 
-// Sample product data (in real app, this would come from API)
-const productData = {
-  id: '1',
-  name: 'Luxury Matte Lipstick Collection',
-  price: 45000,
-  originalPrice: 65000,
-  description: 'Experience the ultimate in lip luxury with our Matte Lipstick Collection. Formulated with nourishing ingredients, this long-lasting formula delivers intense color payoff while keeping your lips hydrated and comfortable all day long.',
-  images: [
-    '/images/products/makeup/pexels-828860-2536009.jpg',
-    '/images/products/makeup/pexels-shiny-diamond-3373734.jpg',
-    '/images/products/makeup/pexels-828860-2693644.jpg',
-    '/images/products/makeup/pexels-suzy-hazelwood-1191531.jpg',
-  ],
-  category: 'Makeup',
-  subcategory: 'Lips',
-  brand: 'CHOCKY\'S Beauty',
-  rating: 4.5,
-  reviews: 124,
-  inStock: true,
-  sku: 'LIP-MAT-001',
-  colors: [
-    { name: 'Ruby Red', hex: '#9B111E' },
-    { name: 'Nude Pink', hex: '#E8B4B8' },
-    { name: 'Berry Wine', hex: '#722F37' },
-    { name: 'Coral Sunset', hex: '#FF7F50' },
-    { name: 'Mauve Magic', hex: '#E0B0FF' },
-  ],
-  features: [
-    'Long-lasting 12-hour wear',
-    'Hydrating formula with Vitamin E',
-    'Cruelty-free and vegan',
-    'Highly pigmented',
-    'Smooth, non-drying finish',
-  ],
-  ingredients: 'Ricinus Communis (Castor) Seed Oil, Caprylic/Capric Triglyceride, Ozokerite, Candelilla Cera, Cera Alba, Tocopheryl Acetate (Vitamin E), Fragrance.',
-};
-
-const relatedProducts = [
-  {
-    id: '7',
-    name: 'Foundation SPF 30',
-    price: 85000,
-    image: '/images/products/makeup/pexels-shiny-diamond-3373734.jpg',
-    category: 'Makeup',
-    rating: 4.4,
-    reviews: 98,
-  },
-  {
-    id: '13',
-    name: 'Eyeshadow Palette',
-    price: 75000,
-    image: '/images/products/makeup/pexels-828860-2693644.jpg',
-    category: 'Makeup',
-    rating: 4.6,
-    reviews: 67,
-    badge: 'New' as const,
-  },
-  {
-    id: '14',
-    name: 'Mascara Volume',
-    price: 35000,
-    image: '/images/products/makeup/pexels-suzy-hazelwood-1191531.jpg',
-    category: 'Makeup',
-    rating: 4.7,
-    reviews: 156,
-    badge: 'Bestseller' as const,
-  },
-  {
-    id: '15',
-    name: 'Blush Duo',
-    price: 55000,
-    image: '/images/products/makeup/pexels-828860-2536009.jpg',
-    category: 'Makeup',
-    rating: 4.5,
-    reviews: 43,
-  },
-];
-
-const reviews = [
-  {
-    id: 1,
-    author: 'Sarah M.',
-    rating: 5,
-    date: '2024-01-15',
-    title: 'Best lipstick ever!',
-    content: 'I absolutely love this lipstick! The color is gorgeous and it lasts all day without drying out my lips. Will definitely buy more colors!',
-    verified: true,
-  },
-  {
-    id: 2,
-    author: 'Grace K.',
-    rating: 4,
-    date: '2024-01-10',
-    title: 'Great quality',
-    content: 'Beautiful color and smooth application. Only giving 4 stars because I wish it came in more shades.',
-    verified: true,
-  },
-  {
-    id: 3,
-    author: 'Amina J.',
-    rating: 5,
-    date: '2024-01-05',
-    title: 'Perfect for everyday wear',
-    content: 'This has become my go-to lipstick. The matte finish is beautiful and it doesn\'t feel heavy on the lips.',
-    verified: true,
-  },
-];
-
 export default function ProductDetailPage() {
   const params = useParams();
+  const id = params?.id as string;
   const { addItem } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
   
+  const [product, setProduct] = useState<any>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
 
-  const product = productData; // In real app, fetch based on params.id
+  useEffect(() => {
+    async function fetchProduct() {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        const data = await res.json();
+        if (data.success) {
+          setProduct(data.data);
+          setRelatedProducts(data.data.relatedProducts || []);
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchProduct();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cream">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-cream text-center px-4">
+        <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+        <p className="text-gray-600 mb-8">The product you are looking for doesn't exist or has been removed.</p>
+        <Link href="/shop" className="btn btn-primary">Back to Shop</Link>
+      </div>
+    );
+  }
+
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = () => {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
-      image: product.images[0],
+      price: Number(product.price),
+      image: product.images[0]?.url || '/images/placeholders/product.jpg',
       quantity: quantity,
-      variant: product.colors[selectedColor].name,
+      variant: product.variants?.[selectedVariant]?.name,
     });
   };
 
@@ -147,20 +80,24 @@ export default function ProductDetailPage() {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: product.price,
-        image: product.images[0],
-        category: product.category,
+        price: Number(product.price),
+        image: product.images[0]?.url || '/images/placeholders/product.jpg',
+        category: product.category?.name || 'Uncategorized',
       });
     }
   };
 
   const formatPrice = (price: number) => {
-    return `UGX ${price.toLocaleString()}`;
+    return `UGX ${Number(price).toLocaleString()}`;
   };
 
-  const discount = product.originalPrice 
-    ? Math.round((1 - product.price / product.originalPrice) * 100) 
+  const discount = product.compareAtPrice 
+    ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice)) * 100) 
     : 0;
+
+  const productImages = product.images.length > 0 
+    ? product.images.map((img: any) => img.url) 
+    : ['/images/placeholders/product.jpg'];
 
   return (
     <div className="min-h-screen bg-cream">
@@ -172,7 +109,7 @@ export default function ProductDetailPage() {
             <i className="fas fa-chevron-right text-gray-300 text-xs"></i>
             <Link href="/shop" className="text-gray-500 hover:text-primary transition-colors">Shop</Link>
             <i className="fas fa-chevron-right text-gray-300 text-xs"></i>
-            <Link href={`/shop?category=${product.category}`} className="text-gray-500 hover:text-primary transition-colors">{product.category}</Link>
+            <Link href={`/shop?category=${product.category?.name}`} className="text-gray-500 hover:text-primary transition-colors">{product.category?.name}</Link>
             <i className="fas fa-chevron-right text-gray-300 text-xs"></i>
             <span className="text-gray-900 font-medium">{product.name}</span>
           </nav>
@@ -186,7 +123,7 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-soft">
               <Image
-                src={product.images[selectedImage]}
+                src={productImages[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -202,7 +139,7 @@ export default function ProductDetailPage() {
               </button>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {product.images.map((image, index) => (
+              {productImages.map((image: string, index: number) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
@@ -225,7 +162,7 @@ export default function ProductDetailPage() {
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <p className="text-primary font-medium mb-2">{product.brand}</p>
+              <p className="text-primary font-medium mb-2">{product.brand?.name || "CHOCKY'S Beauty"}</p>
               <h1 className="font-heading text-2xl md:text-3xl font-bold mb-3">{product.name}</h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
@@ -233,20 +170,20 @@ export default function ProductDetailPage() {
                     <i
                       key={i}
                       className={`fas fa-star text-sm ${
-                        i < Math.floor(product.rating) ? 'text-primary' : 'text-gray-300'
+                        i < Math.floor(product.averageRating) ? 'text-primary' : 'text-gray-300'
                       }`}
                     ></i>
                   ))}
-                  <span className="ml-2 text-gray-600">({product.reviews} reviews)</span>
+                  <span className="ml-2 text-gray-600">({product.reviewCount} reviews)</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-primary">{formatPrice(product.price)}</span>
-              {product.originalPrice && (
+              {product.compareAtPrice && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
+                  <span className="text-xl text-gray-400 line-through">{formatPrice(product.compareAtPrice)}</span>
                   <span className="bg-primary/10 text-primary px-2 py-1 rounded text-sm font-medium">
                     Save {discount}%
                   </span>
@@ -256,25 +193,29 @@ export default function ProductDetailPage() {
 
             <p className="text-gray-600 leading-relaxed">{product.description}</p>
 
-            {/* Color Selection */}
-            <div>
-              <p className="font-medium mb-3">
-                Color: <span className="text-gray-600">{product.colors[selectedColor].name}</span>
-              </p>
-              <div className="flex gap-2">
-                {product.colors.map((color, index) => (
-                  <button
-                    key={color.name}
-                    onClick={() => setSelectedColor(index)}
-                    className={`w-10 h-10 rounded-full border-2 transition-all ${
-                      selectedColor === index ? 'border-gray-900 scale-110' : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color.hex }}
-                    title={color.name}
-                  />
-                ))}
+            {/* Variant Selection */}
+            {product.variants && product.variants.length > 0 && (
+              <div>
+                <p className="font-medium mb-3">
+                  Option: <span className="text-gray-600">{product.variants[selectedVariant].name}</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((variant: any, index: number) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setSelectedVariant(index)}
+                      className={`px-4 py-2 rounded-lg border-2 transition-all text-sm ${
+                        selectedVariant === index 
+                          ? 'border-primary bg-primary/5 text-primary' 
+                          : 'border-gray-200 hover:border-primary/30'
+                      }`}
+                    >
+                      {variant.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quantity */}
             <div>
@@ -296,8 +237,8 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
                 <span className="text-sm text-gray-500">
-                  {product.inStock ? (
-                    <span className="text-green-600"><i className="fas fa-check-circle mr-1"></i> In Stock</span>
+                  {product.stockQuantity > 0 ? (
+                    <span className="text-green-600"><i className="fas fa-check-circle mr-1"></i> In Stock ({product.stockQuantity} available)</span>
                   ) : (
                     <span className="text-red-600"><i className="fas fa-times-circle mr-1"></i> Out of Stock</span>
                   )}
@@ -309,7 +250,7 @@ export default function ProductDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={product.stockQuantity <= 0}
                 className="flex-1 btn btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <i className="fas fa-shopping-bag mr-2"></i>
@@ -330,8 +271,8 @@ export default function ProductDetailPage() {
             {/* Product Meta */}
             <div className="border-t border-gray-200 pt-6 space-y-2 text-sm">
               <p><span className="text-gray-500">SKU:</span> {product.sku}</p>
-              <p><span className="text-gray-500">Category:</span> <Link href={`/shop?category=${product.category}`} className="text-primary hover:underline">{product.category}</Link></p>
-              <p><span className="text-gray-500">Brand:</span> {product.brand}</p>
+              <p><span className="text-gray-500">Category:</span> <Link href={`/shop?category=${product.category?.name}`} className="text-primary hover:underline">{product.category?.name}</Link></p>
+              <p><span className="text-gray-500">Brand:</span> {product.brand?.name}</p>
             </div>
 
             {/* Share */}
@@ -369,7 +310,7 @@ export default function ProductDetailPage() {
                       : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
-                  {tab === 'reviews' ? `Reviews (${product.reviews})` : tab}
+                  {tab === 'reviews' ? `Reviews (${product.reviewCount})` : tab}
                 </button>
               ))}
             </div>
@@ -378,16 +319,20 @@ export default function ProductDetailPage() {
             {activeTab === 'description' && (
               <div className="prose max-w-none">
                 <p className="text-gray-600 leading-relaxed mb-4">{product.description}</p>
-                <h4 className="font-semibold mb-2">Ingredients</h4>
-                <p className="text-gray-600 text-sm">{product.ingredients}</p>
+                {product.ingredients && (
+                  <>
+                    <h4 className="font-semibold mb-2">Ingredients</h4>
+                    <p className="text-gray-600 text-sm">{product.ingredients}</p>
+                  </>
+                )}
               </div>
             )}
             {activeTab === 'features' && (
               <ul className="space-y-3">
-                {product.features.map((feature, index) => (
+                {product.tags && product.tags.split(',').map((tag: string, index: number) => (
                   <li key={index} className="flex items-start gap-3">
                     <i className="fas fa-check-circle text-primary mt-1"></i>
-                    <span className="text-gray-600">{feature}</span>
+                    <span className="text-gray-600 uppercase text-sm">{tag.trim()}</span>
                   </li>
                 ))}
               </ul>
@@ -397,48 +342,29 @@ export default function ProductDetailPage() {
                 {/* Reviews Summary */}
                 <div className="flex flex-col md:flex-row gap-8 pb-6 border-b border-gray-100">
                   <div className="text-center md:text-left">
-                    <div className="text-5xl font-bold text-gray-900 mb-2">{product.rating}</div>
+                    <div className="text-5xl font-bold text-gray-900 mb-2">{product.averageRating}</div>
                     <div className="flex justify-center md:justify-start gap-1 mb-2">
                       {[...Array(5)].map((_, i) => (
                         <i
                           key={i}
                           className={`fas fa-star ${
-                            i < Math.floor(product.rating) ? 'text-primary' : 'text-gray-300'
+                            i < Math.floor(product.averageRating) ? 'text-primary' : 'text-gray-300'
                           }`}
                         ></i>
                       ))}
                     </div>
-                    <p className="text-gray-500">{product.reviews} reviews</p>
-                  </div>
-                  <div className="flex-1">
-                    {[5, 4, 3, 2, 1].map((stars) => (
-                      <div key={stars} className="flex items-center gap-3 mb-2">
-                        <span className="text-sm w-8">{stars} <i className="fas fa-star text-xs text-primary"></i></span>
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${stars === 5 ? 60 : stars === 4 ? 25 : stars === 3 ? 10 : 5}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm text-gray-500 w-8">{stars === 5 ? 60 : stars === 4 ? 25 : stars === 3 ? 10 : 5}%</span>
-                      </div>
-                    ))}
+                    <p className="text-gray-500">{product.reviewCount} reviews</p>
                   </div>
                 </div>
 
                 {/* Review List */}
                 <div className="space-y-6">
-                  {reviews.map((review) => (
+                  {product.reviews && product.reviews.length > 0 ? product.reviews.map((review: any) => (
                     <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{review.author}</span>
-                            {review.verified && (
-                              <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                                <i className="fas fa-check mr-1"></i>Verified
-                              </span>
-                            )}
+                            <span className="font-medium">{review.user?.firstName} {review.user?.lastName}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex gap-0.5">
@@ -451,17 +377,17 @@ export default function ProductDetailPage() {
                                 ></i>
                               ))}
                             </div>
-                            <span className="text-sm text-gray-500">{review.date}</span>
+                            <span className="text-sm text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
                       <h4 className="font-medium mb-2">{review.title}</h4>
-                      <p className="text-gray-600">{review.content}</p>
+                      <p className="text-gray-600">{review.comment}</p>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="py-8 text-center text-gray-500">No reviews yet.</div>
+                  )}
                 </div>
-
-                <button className="btn btn-outline w-full">Load More Reviews</button>
               </div>
             )}
           </div>
@@ -471,8 +397,14 @@ export default function ProductDetailPage() {
         <div>
           <h2 className="font-heading text-2xl font-bold mb-6">You May Also Like</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {relatedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {relatedProducts.map((p) => (
+              <ProductCard key={p.id} product={{
+                ...p,
+                image: p.image || '/images/placeholders/product.jpg',
+                category: product.category?.name || 'Uncategorized',
+                rating: p.averageRating || 0,
+                reviews: p.reviewCount || 0
+              }} />
             ))}
           </div>
         </div>

@@ -57,6 +57,8 @@ export const authOptions: NextAuthOptions = {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
           image: user.avatar,
           role: user.role,
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
         };
       },
     }),
@@ -74,6 +76,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
       }
 
       // Handle session update
@@ -88,6 +92,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.firstName = token.firstName as string;
+        session.user.lastName = token.lastName as string;
       }
       return session;
     },

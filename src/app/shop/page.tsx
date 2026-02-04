@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ProductCard from '@/components/products/ProductCard';
@@ -19,212 +19,6 @@ interface Product {
   badge?: BadgeType;
 }
 
-// Extended products data for pagination demo
-const allProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Luxury Matte Lipstick',
-    price: 45000,
-    originalPrice: 65000,
-    image: '/images/products/makeup/pexels-828860-2536009.jpg',
-    category: 'Makeup',
-    rating: 4.5,
-    reviews: 124,
-    badge: 'Sale' as BadgeType,
-  },
-  {
-    id: '2',
-    name: 'HD Lace Front Wig',
-    price: 450000,
-    image: '/images/products/hair/pexels-venus-31818416.jpg',
-    category: 'Hair',
-    rating: 4.8,
-    reviews: 89,
-    badge: 'Bestseller' as BadgeType,
-  },
-  {
-    id: '3',
-    name: 'Vitamin C Serum',
-    price: 120000,
-    image: '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
-    category: 'Skincare',
-    rating: 4.6,
-    reviews: 56,
-    badge: 'New' as BadgeType,
-  },
-  {
-    id: '4',
-    name: 'Designer Handbag',
-    price: 285000,
-    originalPrice: 350000,
-    image: '/images/products/bags/pexels-dhanno-22432991.jpg',
-    category: 'Bags',
-    rating: 4.7,
-    reviews: 42,
-    badge: 'Sale' as BadgeType,
-  },
-  {
-    id: '5',
-    name: 'Floral Eau de Parfum',
-    price: 180000,
-    image: '/images/products/perfumes/pexels-valeriya-724635.jpg',
-    category: 'Perfumes',
-    rating: 4.9,
-    reviews: 78,
-    badge: 'Bestseller' as BadgeType,
-  },
-  {
-    id: '6',
-    name: 'Gold Necklace Set',
-    price: 320000,
-    image: '/images/products/jewelry/pexels-castorlystock-3641059.jpg',
-    category: 'Jewelry',
-    rating: 4.8,
-    reviews: 35,
-    badge: 'New' as BadgeType,
-  },
-  {
-    id: '7',
-    name: 'Foundation SPF 30',
-    price: 85000,
-    image: '/images/products/makeup/pexels-shiny-diamond-3373734.jpg',
-    category: 'Makeup',
-    rating: 4.4,
-    reviews: 98,
-  },
-  {
-    id: '8',
-    name: 'Brazilian Hair Bundle',
-    price: 380000,
-    image: '/images/products/hair/pexels-rdne-6923351.jpg',
-    category: 'Hair',
-    rating: 4.7,
-    reviews: 67,
-  },
-  {
-    id: '9',
-    name: 'Hydrating Moisturizer',
-    price: 95000,
-    image: '/images/products/skincare/pexels-karola-g-4889036.jpg',
-    category: 'Skincare',
-    rating: 4.5,
-    reviews: 112,
-  },
-  {
-    id: '10',
-    name: 'Leather Tote Bag',
-    price: 220000,
-    image: '/images/products/bags/pexels-dhanno-22432992.jpg',
-    category: 'Bags',
-    rating: 4.6,
-    reviews: 54,
-  },
-  {
-    id: '11',
-    name: 'Oud Perfume',
-    price: 250000,
-    image: '/images/products/perfumes/pexels-castorlystock-3785784.jpg',
-    category: 'Perfumes',
-    rating: 4.8,
-    reviews: 45,
-  },
-  {
-    id: '12',
-    name: 'Pearl Earrings',
-    price: 150000,
-    image: '/images/products/jewelry/pexels-the-glorious-studio-3584518-6716444.jpg',
-    category: 'Jewelry',
-    rating: 4.9,
-    reviews: 28,
-  },
-  // Additional products for pagination
-  {
-    id: '13',
-    name: 'Eyeshadow Palette',
-    price: 75000,
-    image: '/images/products/makeup/pexels-828860-2693644.jpg',
-    category: 'Makeup',
-    rating: 4.6,
-    reviews: 89,
-    badge: 'Trending' as BadgeType,
-  },
-  {
-    id: '14',
-    name: 'Curly Wig',
-    price: 320000,
-    image: '/images/products/hair/pexels-alinaskazka-14730865.jpg',
-    category: 'Hair',
-    rating: 4.5,
-    reviews: 45,
-  },
-  {
-    id: '15',
-    name: 'Anti-Aging Cream',
-    price: 180000,
-    image: '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
-    category: 'Skincare',
-    rating: 4.7,
-    reviews: 67,
-    badge: 'New' as BadgeType,
-  },
-  {
-    id: '16',
-    name: 'Crossbody Bag',
-    price: 165000,
-    image: '/images/products/bags/pexels-dhanno-22432993.jpg',
-    category: 'Bags',
-    rating: 4.4,
-    reviews: 32,
-  },
-  {
-    id: '17',
-    name: 'Rose Perfume',
-    price: 145000,
-    image: '/images/products/perfumes/pexels-valeriya-724635.jpg',
-    category: 'Perfumes',
-    rating: 4.6,
-    reviews: 56,
-  },
-  {
-    id: '18',
-    name: 'Diamond Ring',
-    price: 850000,
-    image: '/images/products/jewelry/pexels-castorlystock-3641059.jpg',
-    category: 'Jewelry',
-    rating: 4.9,
-    reviews: 23,
-    badge: 'Bestseller' as BadgeType,
-  },
-  {
-    id: '19',
-    name: 'Lip Gloss Set',
-    price: 55000,
-    image: '/images/products/makeup/pexels-shiny-diamond-3373734.jpg',
-    category: 'Makeup',
-    rating: 4.3,
-    reviews: 78,
-  },
-  {
-    id: '20',
-    name: 'Straight Wig',
-    price: 280000,
-    image: '/images/products/hair/pexels-venus-31818416.jpg',
-    category: 'Hair',
-    rating: 4.6,
-    reviews: 54,
-  },
-];
-
-const categories = [
-  { name: 'All', count: 120 },
-  { name: 'Makeup', count: 45 },
-  { name: 'Hair', count: 30 },
-  { name: 'Skincare', count: 25 },
-  { name: 'Perfumes', count: 20 },
-  { name: 'Jewelry', count: 35 },
-  { name: 'Bags', count: 18 },
-];
-
 const priceRanges = [
   { label: 'Under UGX 50,000', min: 0, max: 50000 },
   { label: 'UGX 50,000 - 100,000', min: 50000, max: 100000 },
@@ -233,55 +27,99 @@ const priceRanges = [
   { label: 'Over UGX 500,000', min: 500000, max: Infinity },
 ];
 
-const PRODUCTS_PER_PAGE = 8;
+const PRODUCTS_PER_PAGE = 12;
 
 export default function ShopPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ name: string; slug: string; count: number }[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('featured');
+  const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Filter products
-  const filteredProducts = useMemo(() => {
-    return allProducts.filter(product => {
-      if (selectedCategory !== 'All' && product.category !== selectedCategory) {
-        return false;
-      }
-      if (selectedPriceRange !== null) {
-        const range = priceRanges[selectedPriceRange];
-        if (product.price < range.min || product.price > range.max) {
-          return false;
+  // Fetch categories
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await fetch('/api/categories');
+        const data = await res.json();
+        if (data.success) {
+          const formattedCategories = data.data.map((cat: any) => ({
+            name: cat.name,
+            slug: cat.slug,
+            count: cat._count.products,
+          }));
+          setCategories([{ name: 'All', slug: 'all', count: formattedCategories.reduce((acc: number, cat: any) => acc + cat.count, 0) }, ...formattedCategories]);
         }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
       }
-      return true;
-    });
-  }, [selectedCategory, selectedPriceRange]);
+    }
+    fetchCategories();
+  }, []);
 
-  // Sort products
-  const sortedProducts = useMemo(() => {
-    return [...filteredProducts].sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
-        case 'rating':
-          return b.rating - a.rating;
-        case 'newest':
-          return parseInt(b.id) - parseInt(a.id);
-        default:
-          return 0;
+  // Fetch products
+  useEffect(() => {
+    async function fetchProducts() {
+      setIsLoading(true);
+      try {
+        let url = `/api/products?page=${currentPage}&limit=${PRODUCTS_PER_PAGE}`;
+        
+        if (selectedCategory !== 'All') {
+          const category = categories.find(c => c.name === selectedCategory);
+          if (category) url += `&category=${category.slug}`;
+        }
+        
+        if (selectedPriceRange !== null) {
+          const range = priceRanges[selectedPriceRange];
+          url += `&minPrice=${range.min}`;
+          if (range.max !== Infinity) url += `&maxPrice=${range.max}`;
+        }
+        
+        if (sortBy === 'price-low') {
+          url += '&sortBy=price&sortOrder=asc';
+        } else if (sortBy === 'price-high') {
+          url += '&sortBy=price&sortOrder=desc';
+        } else if (sortBy === 'rating') {
+          url += '&sortBy=rating&sortOrder=desc';
+        } else if (sortBy === 'newest') {
+          url += '&sortBy=createdAt&sortOrder=desc';
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success) {
+          const formattedProducts = data.data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            originalPrice: p.compareAtPrice ? Number(p.compareAtPrice) : undefined,
+            image: p.images[0]?.url || '/images/placeholders/product.jpg',
+            category: p.category?.name || 'Uncategorized',
+            rating: p.averageRating || 0,
+            reviews: p.reviewCount || 0,
+            badge: p.isOnSale ? 'Sale' : p.isNewArrival ? 'New' : p.isBestseller ? 'Bestseller' : undefined,
+          }));
+          setProducts(formattedProducts);
+          setTotalProducts(data.pagination.total);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setIsLoading(false);
       }
-    });
-  }, [filteredProducts, sortBy]);
+    }
 
-  // Pagination
-  const totalPages = Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE);
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    return sortedProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
-  }, [sortedProducts, currentPage]);
+    if (categories.length > 0 || selectedCategory === 'All') {
+      fetchProducts();
+    }
+  }, [currentPage, selectedCategory, selectedPriceRange, sortBy, categories]);
+
+  const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
 
   // Reset to page 1 when filters change
   const handleCategoryChange = (category: string) => {
@@ -423,7 +261,7 @@ export default function ShopPage() {
                   Filters
                 </button>
                 <p className="text-gray-600">
-                  Showing <strong>{paginatedProducts.length}</strong> of <strong>{sortedProducts.length}</strong> products
+                  Showing <strong>{products.length}</strong> of <strong>{totalProducts}</strong> products
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -482,14 +320,22 @@ export default function ShopPage() {
             )}
 
             {/* Products Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {paginatedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl aspect-[3/4] animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
 
             {/* Empty State */}
-            {sortedProducts.length === 0 && (
+            {!isLoading && products.length === 0 && (
               <div className="text-center py-16">
                 <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
                 <h3 className="text-xl font-semibold mb-2">No products found</h3>

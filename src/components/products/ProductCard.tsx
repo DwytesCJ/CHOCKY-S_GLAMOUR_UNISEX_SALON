@@ -99,7 +99,7 @@ function ProductCard({ product }: ProductCardProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link href={`/shop/product/${product.id}`}>
+      <Link href={`/shop/${product.id}`}>
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-cream">
           <Image

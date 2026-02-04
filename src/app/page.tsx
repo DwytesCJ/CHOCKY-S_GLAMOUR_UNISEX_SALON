@@ -67,6 +67,37 @@ const testimonials = [
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [dynamicProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [dynamicCategories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch featured products and categories
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch('/api/products?featured=true&limit=8'),
+          fetch('/api/categories?parentOnly=true')
+        ]);
+
+        const productsData = await productsRes.json();
+        const categoriesData = await categoriesRes.json();
+
+        if (productsData.success) {
+          setFeaturedProducts(productsData.data);
+        }
+        if (categoriesData.success) {
+          setCategories(categoriesData.data);
+        }
+      } catch (error) {
+        console.error('Error fetching homepage data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   // Auto-rotate hero slides
   useEffect(() => {
@@ -79,6 +110,28 @@ export default function HomePage() {
   const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index);
   }, []);
+
+  // Map dynamic products to ProductCard format
+  const displayProducts = dynamicProducts.length > 0 ? dynamicProducts.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: Number(p.price),
+    originalPrice: p.compareAtPrice ? Number(p.compareAtPrice) : undefined,
+    image: p.images?.[0]?.url || '/images/placeholder.jpg',
+    category: p.category?.name || 'Beauty',
+    rating: p.averageRating || 5,
+    reviews: p.reviewCount || 0,
+    badge: p.isOnSale ? 'Sale' : (p.isBestseller ? 'Bestseller' : (p.isNewArrival ? 'New' : undefined))
+  })) : featuredProducts;
+
+  // Map dynamic categories
+  const displayCategories = dynamicCategories.length > 0 ? dynamicCategories.map(c => ({
+    id: c.id,
+    name: c.name,
+    image: c.image || '/images/placeholder.jpg',
+    href: `/shop?category=${c.slug}`,
+    count: `${c._count?.products || 0}+`
+  })) : categories;
 
   return (
     <div className="overflow-x-hidden">
@@ -187,7 +240,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            {categories.map((category) => (
+            {displayCategories.map((category) => (
               <Link
                 key={category.id}
                 href={category.href}
@@ -230,8 +283,8 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {displayProducts.map((product) => (
+              <ProductCard key={product.id} product={product as any} />
             ))}
           </div>
         </div>

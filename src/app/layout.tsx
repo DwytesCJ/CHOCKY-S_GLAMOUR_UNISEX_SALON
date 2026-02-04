@@ -3,6 +3,7 @@ import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { Providers } from "@/components/Providers";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -51,18 +52,20 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased bg-white text-dark-900">
-        <CartProvider>
-          <WishlistProvider>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
-              <CartDrawer />
-            </div>
-          </WishlistProvider>
-        </CartProvider>
+        <Providers>
+          <CartProvider>
+            <WishlistProvider>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1">
+                  {children}
+                </main>
+                <Footer />
+                <CartDrawer />
+              </div>
+            </WishlistProvider>
+          </CartProvider>
+        </Providers>
       </body>
     </html>
   );

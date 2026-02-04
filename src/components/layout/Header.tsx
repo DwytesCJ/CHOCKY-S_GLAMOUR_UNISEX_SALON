@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 
@@ -61,8 +62,11 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  const { data: session, status } = useSession();
   const { totalItems: cartItems, toggleCart } = useCart();
   const { totalItems: wishlistItems } = useWishlist();
+
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 20);
@@ -183,13 +187,67 @@ export default function Header() {
               </button>
 
               {/* Account */}
-              <Link
-                href="/account"
-                className={`p-2 rounded-full transition-colors hidden sm:flex ${textColor} ${hoverBg}`}
-                aria-label="Account"
-              >
-                <i className="fas fa-user text-lg"></i>
-              </Link>
+              <div className="relative group">
+                <Link
+                  href={status === 'authenticated' ? "/account" : "/account/login"}
+                  className={`p-2 rounded-full transition-colors flex items-center gap-1 ${textColor} ${hoverBg}`}
+                  aria-label="Account"
+                >
+                  <i className="fas fa-user text-lg"></i>
+                  {status === 'authenticated' && session.user.firstName && (
+                    <span className="hidden xl:inline text-xs font-semibold max-w-[80px] truncate">
+                      {session.user.firstName}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
+                  <div className="bg-white rounded-xl shadow-xl py-2 min-w-[200px] border border-gray-100 overflow-hidden">
+                    {status === 'authenticated' ? (
+                      <>
+                        <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50">
+                          <p className="text-xs text-gray-500">Signed in as</p>
+                          <p className="text-sm font-semibold truncate text-gray-900">{session.user.email}</p>
+                        </div>
+                        {isAdmin && (
+                          <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
+                            <i className="fas fa-shield-alt w-5"></i>
+                            Admin Dashboard
+                          </Link>
+                        )}
+                        <Link href="/account" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
+                          <i className="fas fa-user-circle w-5"></i>
+                          My Profile
+                        </Link>
+                        <Link href="/account/orders" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
+                          <i className="fas fa-shopping-bag w-5"></i>
+                          My Orders
+                        </Link>
+                        <hr className="my-1 border-gray-100" />
+                        <button 
+                          onClick={() => signOut()}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                        >
+                          <i className="fas fa-sign-out-alt w-5"></i>
+                          Sign Out
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/account/login" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
+                          <i className="fas fa-sign-in-alt w-5"></i>
+                          Sign In
+                        </Link>
+                        <Link href="/account/register" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
+                          <i className="fas fa-user-plus w-5"></i>
+                          Create Account
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Wishlist */}
               <Link

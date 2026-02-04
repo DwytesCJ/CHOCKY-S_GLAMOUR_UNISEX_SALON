@@ -48,92 +48,48 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulated data - replace with actual API calls
     const fetchDashboardData = async () => {
       try {
-        // Simulated stats
-        setStats({
-          totalOrders: 156,
-          pendingOrders: 12,
-          totalRevenue: 45680000,
-          totalCustomers: 342,
-          totalProducts: 89,
-          lowStockProducts: 5,
-          todayAppointments: 8,
-          pendingAppointments: 3,
-        });
-
-        // Simulated recent orders
-        setRecentOrders([
-          {
-            id: '1',
-            orderNumber: 'CHK-2024-001',
-            customerName: 'Sarah Nakamya',
-            total: 185000,
-            status: 'PENDING',
-            createdAt: '2024-01-15T10:30:00Z',
-          },
-          {
-            id: '2',
-            orderNumber: 'CHK-2024-002',
-            customerName: 'Grace Auma',
-            total: 320000,
-            status: 'PROCESSING',
-            createdAt: '2024-01-15T09:15:00Z',
-          },
-          {
-            id: '3',
-            orderNumber: 'CHK-2024-003',
-            customerName: 'Faith Nambi',
-            total: 95000,
-            status: 'SHIPPED',
-            createdAt: '2024-01-14T16:45:00Z',
-          },
-          {
-            id: '4',
-            orderNumber: 'CHK-2024-004',
-            customerName: 'Joy Atim',
-            total: 450000,
-            status: 'DELIVERED',
-            createdAt: '2024-01-14T14:20:00Z',
-          },
-          {
-            id: '5',
-            orderNumber: 'CHK-2024-005',
-            customerName: 'Peace Nakato',
-            total: 275000,
-            status: 'PENDING',
-            createdAt: '2024-01-14T11:00:00Z',
-          },
+        const [dashboardRes, appointmentsRes] = await Promise.all([
+          fetch('/api/admin/dashboard'),
+          fetch('/api/appointments') // Adjust if there's a specific admin appointments API
         ]);
 
-        // Simulated recent appointments
-        setRecentAppointments([
-          {
-            id: '1',
-            customerName: 'Mary Tendo',
-            service: 'Bridal Makeup',
-            date: '2024-01-16',
-            time: '09:00',
-            status: 'CONFIRMED',
-          },
-          {
-            id: '2',
-            customerName: 'Agnes Namutebi',
-            service: 'Hair Styling',
-            date: '2024-01-16',
-            time: '10:30',
-            status: 'PENDING',
-          },
-          {
-            id: '3',
-            customerName: 'Rose Akello',
-            service: 'Facial Treatment',
-            date: '2024-01-16',
-            time: '14:00',
-            status: 'CONFIRMED',
-          },
-        ]);
+        const dashboardData = await dashboardRes.json();
+        const appointmentsData = await appointmentsRes.json();
+
+        if (dashboardData.success) {
+          const { overview, recentOrders: rOrders } = dashboardData.data;
+          setStats({
+            totalOrders: overview.totalOrders,
+            pendingOrders: overview.pendingOrders,
+            totalRevenue: Number(overview.totalRevenue),
+            totalCustomers: overview.totalCustomers,
+            totalProducts: overview.totalProducts,
+            lowStockProducts: overview.lowStockProducts,
+            todayAppointments: overview.todayAppointments,
+            pendingAppointments: overview.pendingAppointments,
+          });
+          setRecentOrders(rOrders.map((o: any) => ({
+            id: o.id,
+            orderNumber: o.orderNumber,
+            customerName: o.customer,
+            total: Number(o.total),
+            status: o.status,
+            createdAt: o.createdAt,
+          })));
+        }
+
+        if (appointmentsData.success) {
+          setRecentAppointments(appointmentsData.data.slice(0, 5).map((a: any) => ({
+            id: a.id,
+            customerName: `${a.user?.firstName || ''} ${a.user?.lastName || ''}`.trim() || 'Guest',
+            service: a.service?.name || 'Service',
+            date: new Date(a.date).toLocaleDateString(),
+            time: a.startTime,
+            status: a.status,
+          })));
+        }
 
         setLoading(false);
       } catch (error) {
