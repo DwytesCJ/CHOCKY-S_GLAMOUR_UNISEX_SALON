@@ -85,14 +85,14 @@ export default function AccountDashboard() {
   };
 
   const menuItems = [
-    { icon: 'fa-home', label: 'Dashboard', href: '/account', active: activeTab === 'dashboard' },
-    { icon: 'fa-shopping-bag', label: 'Orders', href: '/account/orders', active: activeTab === 'orders' },
-    { icon: 'fa-heart', label: 'Wishlist', href: '/account/wishlist', active: activeTab === 'wishlist' },
-    { icon: 'fa-calendar-alt', label: 'Appointments', href: '/account/appointments', active: activeTab === 'appointments' },
-    { icon: 'fa-crown', label: 'Rewards', href: '/account/rewards', active: activeTab === 'rewards' },
-    { icon: 'fa-map-marker-alt', label: 'Addresses', href: '/account/addresses', active: activeTab === 'addresses' },
-    { icon: 'fa-credit-card', label: 'Payment Methods', href: '/account/payments', active: activeTab === 'payments' },
-    { icon: 'fa-cog', label: 'Settings', href: '/account/settings', active: activeTab === 'settings' },
+    { icon: 'fa-home', label: 'Dashboard', href: '/account', active: true },
+    { icon: 'fa-shopping-bag', label: 'Orders', href: '/account/orders', active: false },
+    { icon: 'fa-heart', label: 'Wishlist', href: '/account/wishlist', active: false },
+    { icon: 'fa-calendar-alt', label: 'Appointments', href: '/account/appointments', active: false },
+    { icon: 'fa-crown', label: 'Rewards', href: '/account/rewards', active: false },
+    { icon: 'fa-map-marker-alt', label: 'Addresses', href: '/account/addresses', active: false },
+    { icon: 'fa-credit-card', label: 'Payment Methods', href: '/account/payments', active: false },
+    { icon: 'fa-cog', label: 'Settings', href: '/account/settings', active: false },
   ];
 
   const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;

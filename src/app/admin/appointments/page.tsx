@@ -41,174 +41,52 @@ export default function AdminAppointments() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
-    // Simulated data - replace with actual API calls
     const fetchAppointments = async () => {
       try {
-        const mockAppointments: Appointment[] = [
-          {
-            id: '1',
-            appointmentNumber: 'APT-2024-001',
+        setLoading(true);
+        const response = await fetch('/api/appointments');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to match component interface
+          const transformedAppointments = data.data.map((apt: any) => ({
+            id: apt.id,
+            appointmentNumber: apt.appointmentNumber || `APT-${apt.id.substring(0,8)}`,
             customer: {
-              name: 'Mary Tendo',
-              email: 'mary@example.com',
-              phone: '+256701234567',
+              name: `${apt.user?.firstName || ''} ${apt.user?.lastName || ''}`.trim() || 'Guest',
+              email: apt.user?.email || 'guest@example.com',
+              phone: apt.user?.phone || '+256700000000',
             },
             service: {
-              name: 'Bridal Makeup',
-              category: 'Makeup',
-              duration: 120,
-              price: 350000,
+              name: apt.service?.name || 'Service',
+              category: apt.service?.category?.name || 'General',
+              duration: apt.service?.duration || 60,
+              price: apt.service?.price || 0,
             },
-            stylist: {
-              name: 'Grace Nakimera',
-              image: '/images/team/stylist-1.jpg',
-            },
-            date: '2024-01-16',
-            startTime: '09:00',
-            endTime: '11:00',
-            status: 'CONFIRMED',
-            notes: 'Bride wants natural glam look',
-            depositPaid: true,
-            totalAmount: 350000,
-            createdAt: '2024-01-10T14:30:00Z',
-          },
-          {
-            id: '2',
-            appointmentNumber: 'APT-2024-002',
-            customer: {
-              name: 'Agnes Namutebi',
-              email: 'agnes@example.com',
-              phone: '+256702345678',
-            },
-            service: {
-              name: 'Hair Styling - Braids',
-              category: 'Hair',
-              duration: 180,
-              price: 150000,
-            },
-            stylist: {
-              name: 'Sarah Achieng',
-              image: '/images/team/stylist-2.jpg',
-            },
-            date: '2024-01-16',
-            startTime: '10:30',
-            endTime: '13:30',
-            status: 'PENDING',
-            notes: null,
-            depositPaid: false,
-            totalAmount: 150000,
-            createdAt: '2024-01-12T09:15:00Z',
-          },
-          {
-            id: '3',
-            appointmentNumber: 'APT-2024-003',
-            customer: {
-              name: 'Rose Akello',
-              email: 'rose@example.com',
-              phone: '+256703456789',
-            },
-            service: {
-              name: 'Facial Treatment - Deep Cleanse',
-              category: 'Skincare',
-              duration: 60,
-              price: 80000,
-            },
-            stylist: {
-              name: 'Faith Nambi',
-              image: '/images/team/stylist-3.jpg',
-            },
-            date: '2024-01-16',
-            startTime: '14:00',
-            endTime: '15:00',
-            status: 'CONFIRMED',
-            notes: 'Sensitive skin - use gentle products',
-            depositPaid: true,
-            totalAmount: 80000,
-            createdAt: '2024-01-11T16:45:00Z',
-          },
-          {
-            id: '4',
-            appointmentNumber: 'APT-2024-004',
-            customer: {
-              name: 'Joy Atim',
-              email: 'joy@example.com',
-              phone: '+256704567890',
-            },
-            service: {
-              name: 'Wig Installation',
-              category: 'Hair',
-              duration: 90,
-              price: 200000,
-            },
-            stylist: null,
-            date: '2024-01-17',
-            startTime: '11:00',
-            endTime: '12:30',
-            status: 'PENDING',
-            notes: 'Customer bringing own wig',
-            depositPaid: false,
-            totalAmount: 200000,
-            createdAt: '2024-01-13T10:20:00Z',
-          },
-          {
-            id: '5',
-            appointmentNumber: 'APT-2024-005',
-            customer: {
-              name: 'Peace Nakato',
-              email: 'peace@example.com',
-              phone: '+256705678901',
-            },
-            service: {
-              name: 'Event Makeup',
-              category: 'Makeup',
-              duration: 90,
-              price: 180000,
-            },
-            stylist: {
-              name: 'Grace Nakimera',
-              image: '/images/team/stylist-1.jpg',
-            },
-            date: '2024-01-15',
-            startTime: '15:00',
-            endTime: '16:30',
-            status: 'COMPLETED',
-            notes: null,
-            depositPaid: true,
-            totalAmount: 180000,
-            createdAt: '2024-01-08T11:00:00Z',
-          },
-          {
-            id: '6',
-            appointmentNumber: 'APT-2024-006',
-            customer: {
-              name: 'Hope Achieng',
-              email: 'hope@example.com',
-              phone: '+256706789012',
-            },
-            service: {
-              name: 'Hair Coloring',
-              category: 'Hair',
-              duration: 150,
-              price: 250000,
-            },
-            stylist: {
-              name: 'Sarah Achieng',
-              image: '/images/team/stylist-2.jpg',
-            },
-            date: '2024-01-14',
-            startTime: '09:00',
-            endTime: '11:30',
-            status: 'CANCELLED',
-            notes: 'Customer rescheduled',
-            depositPaid: false,
-            totalAmount: 250000,
-            createdAt: '2024-01-07T14:30:00Z',
-          },
-        ];
-        setAppointments(mockAppointments);
-        setLoading(false);
+            stylist: apt.stylist ? {
+              name: `${apt.stylist.firstName || ''} ${apt.stylist.lastName || ''}`.trim() || 'Stylist',
+              image: apt.stylist.avatar || '/images/placeholder.jpg',
+            } : null,
+            date: apt.date.split('T')[0],
+            startTime: apt.startTime,
+            endTime: apt.endTime,
+            status: apt.status,
+            notes: apt.notes,
+            depositPaid: apt.depositPaid || false,
+            totalAmount: apt.totalAmount || 0,
+            createdAt: apt.createdAt
+          }));
+          
+          setAppointments(transformedAppointments);
+        } else {
+          // Fallback to empty array if API fails
+          setAppointments([]);
+        }
       } catch (error) {
         console.error('Error fetching appointments:', error);
+        // Fallback to empty array on error
+        setAppointments([]);
+      } finally {
         setLoading(false);
       }
     };

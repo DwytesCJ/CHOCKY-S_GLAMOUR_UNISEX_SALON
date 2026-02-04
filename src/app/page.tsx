@@ -36,14 +36,14 @@ const heroSlides = [
   },
 ];
 
-// Categories Data
+// Categories Data - Fallback (should ideally be removed in favor of dynamic data)
 const categories = [
-  { id: 1, name: 'Hair Styling', image: '/images/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg', href: '/shop/hair', count: '120+' },
-  { id: 2, name: 'Makeup', image: '/images/categories/pexels-shattha-pilabut-38930-135620.jpg', href: '/shop/makeup', count: '200+' },
-  { id: 3, name: 'Skincare', image: '/images/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg', href: '/shop/skincare', count: '85+' },
-  { id: 4, name: 'Perfumes', image: '/images/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg', href: '/shop/perfumes', count: '60+' },
-  { id: 5, name: 'Jewelry', image: '/images/categories/pexels-hert-33561789.jpg', href: '/shop/jewelry', count: '150+' },
-  { id: 6, name: 'Bags', image: '/images/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg', href: '/shop/bags', count: '75+' },
+  { id: 1, name: 'Hair Styling', image: '/images/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg', href: '/shop/hair', count: '0+' },
+  { id: 2, name: 'Makeup', image: '/images/categories/pexels-shattha-pilabut-38930-135620.jpg', href: '/shop/makeup', count: '0+' },
+  { id: 3, name: 'Skincare', image: '/images/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg', href: '/shop/skincare', count: '0+' },
+  { id: 4, name: 'Perfumes', image: '/images/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg', href: '/shop/perfumes', count: '0+' },
+  { id: 5, name: 'Jewelry', image: '/images/categories/pexels-hert-33561789.jpg', href: '/shop/jewelry', count: '0+' },
+  { id: 6, name: 'Bags', image: '/images/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg', href: '/shop/bags', count: '0+' },
 ];
 
 // Featured Products Data

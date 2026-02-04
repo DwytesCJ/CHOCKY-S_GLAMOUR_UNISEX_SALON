@@ -12,6 +12,9 @@ interface DashboardStats {
   lowStockProducts: number;
   todayAppointments: number;
   pendingAppointments: number;
+  revenueGrowth: number;
+  orderGrowth: number;
+  customerGrowth: number;
 }
 
 interface RecentOrder {
@@ -42,6 +45,9 @@ export default function AdminDashboard() {
     lowStockProducts: 0,
     todayAppointments: 0,
     pendingAppointments: 0,
+    revenueGrowth: 0,
+    orderGrowth: 0,
+    customerGrowth: 0,
   });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [recentAppointments, setRecentAppointments] = useState<RecentAppointment[]>([]);
@@ -69,6 +75,9 @@ export default function AdminDashboard() {
             lowStockProducts: overview.lowStockProducts,
             todayAppointments: overview.todayAppointments,
             pendingAppointments: overview.pendingAppointments,
+            revenueGrowth: overview.revenueGrowth || 0,
+            orderGrowth: overview.orderGrowth || 0,
+            customerGrowth: overview.newCustomersMonth > 0 ? (overview.newCustomersMonth / Math.max(1, overview.totalCustomers - overview.newCustomersMonth)) * 100 : 0,
           });
           setRecentOrders(rOrders.map((o: any) => ({
             id: o.id,
@@ -178,11 +187,11 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm">
-            <span className="text-green-600 font-medium flex items-center">
+            <span className={`font-medium flex items-center ${stats.revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stats.revenueGrowth >= 0 ? "M5 10l7-7m0 0l7 7m-7-7v18" : "M19 14l-7 7m0 0l-7-7m7 7V3"} />
               </svg>
-              12.5%
+              {Math.abs(stats.revenueGrowth).toFixed(1)}%
             </span>
             <span className="text-gray-500 ml-2">vs last month</span>
           </div>
@@ -221,11 +230,11 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm">
-            <span className="text-green-600 font-medium flex items-center">
+            <span className={`font-medium flex items-center ${stats.customerGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stats.customerGrowth >= 0 ? "M5 10l7-7m0 0l7 7m-7-7v18" : "M19 14l-7 7m0 0l-7-7m7 7V3"} />
               </svg>
-              8.2%
+              {Math.abs(stats.customerGrowth).toFixed(1)}%
             </span>
             <span className="text-gray-500 ml-2">new this month</span>
           </div>

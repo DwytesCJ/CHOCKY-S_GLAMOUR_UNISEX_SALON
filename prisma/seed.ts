@@ -206,105 +206,238 @@ async function main() {
 
   console.log('Created brands');
 
-  // Create Sample Products
+  // Create ALL Current Website Products
   const products = [
+    // Featured Products from homepage
     {
-      name: 'Velvet Matte Lipstick',
-      slug: 'velvet-matte-lipstick',
+      name: 'Luxury Matte Lipstick',
+      slug: 'luxury-matte-lipstick',
       sku: 'LIP-001',
-      description: 'Long-lasting velvet matte finish lipstick with rich pigmentation. Comfortable wear all day.',
-      shortDescription: 'Luxurious matte lipstick with 12-hour wear',
+      description: 'Premium luxury matte lipstick with long-lasting formula and rich pigmentation. Available in multiple shades.',
+      shortDescription: 'Long-lasting velvet matte finish lipstick',
       price: 45000,
-      compareAtPrice: 55000,
+      compareAtPrice: 65000,
       categoryId: categories[4].id, // Makeup
       brandId: brands[3].id, // MAC
-      stockQuantity: 50,
+      stockQuantity: 120,
       isActive: true,
       isFeatured: true,
-      isNewArrival: true,
-      isBestseller: true,
-    },
-    {
-      name: 'Brazilian Body Wave Wig',
-      slug: 'brazilian-body-wave-wig',
-      sku: 'WIG-001',
-      description: 'Premium quality Brazilian human hair wig with natural body wave pattern. Pre-plucked hairline.',
-      shortDescription: '100% human hair wig with natural look',
-      price: 350000,
-      compareAtPrice: 450000,
-      categoryId: categories[0].id, // Hair
-      brandId: brands[0].id, // CHOCKY'S
-      stockQuantity: 20,
-      isActive: true,
-      isFeatured: true,
-      isNewArrival: true,
-    },
-    {
-      name: 'Hydrating Face Serum',
-      slug: 'hydrating-face-serum',
-      sku: 'SKIN-001',
-      description: 'Intensive hydrating serum with hyaluronic acid and vitamin E. Perfect for all skin types.',
-      shortDescription: 'Deep hydration for glowing skin',
-      price: 85000,
-      compareAtPrice: 100000,
-      categoryId: categories[5].id, // Skincare
-      brandId: brands[2].id, // L'Oreal
-      stockQuantity: 35,
-      isActive: true,
-      isFeatured: true,
+      isNewArrival: false,
+      isBestseller: false,
       isOnSale: true,
     },
     {
-      name: 'Designer Leather Handbag',
-      slug: 'designer-leather-handbag',
-      sku: 'BAG-001',
-      description: 'Elegant genuine leather handbag with gold hardware. Spacious interior with multiple compartments.',
-      shortDescription: 'Premium leather handbag for everyday elegance',
-      price: 180000,
-      compareAtPrice: 220000,
-      categoryId: categories[2].id, // Bags
-      brandId: brands[0].id, // CHOCKY'S
-      stockQuantity: 15,
-      isActive: true,
-      isFeatured: true,
-    },
-    {
-      name: 'Floral Eau de Parfum',
-      slug: 'floral-eau-de-parfum',
-      sku: 'PERF-001',
-      description: 'Enchanting floral fragrance with notes of rose, jasmine, and sandalwood. Long-lasting scent.',
-      shortDescription: 'Captivating floral fragrance for women',
-      price: 120000,
-      compareAtPrice: 150000,
-      categoryId: categories[3].id, // Perfumes
+      name: 'HD Lace Front Wig',
+      slug: 'hd-lace-front-wig',
+      sku: 'WIG-001',
+      description: 'High-definition lace front wig with natural hairline and premium human hair. Perfect for daily wear.',
+      shortDescription: 'Natural-looking HD lace front wig',
+      price: 450000,
+      categoryId: categories[0].id, // Hair
       brandId: brands[0].id, // CHOCKY'S
       stockQuantity: 25,
       isActive: true,
       isFeatured: true,
+      isNewArrival: false,
       isBestseller: true,
     },
     {
-      name: 'Crystal Drop Earrings',
-      slug: 'crystal-drop-earrings',
-      sku: 'JEW-001',
-      description: 'Stunning crystal drop earrings with gold-plated finish. Perfect for special occasions.',
-      shortDescription: 'Elegant crystal earrings for any occasion',
-      price: 65000,
-      compareAtPrice: 80000,
+      name: 'Vitamin C Serum',
+      slug: 'vitamin-c-serum',
+      sku: 'SERUM-001',
+      description: 'Potent Vitamin C serum with 20% concentration for brightening and anti-aging benefits. Dermatologist tested.',
+      shortDescription: 'Brightening Vitamin C facial serum',
+      price: 120000,
+      categoryId: categories[5].id, // Skincare
+      brandId: brands[2].id, // L'Oreal
+      stockQuantity: 85,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: true,
+      isOnSale: false,
+    },
+    {
+      name: 'Designer Handbag',
+      slug: 'designer-handbag',
+      sku: 'BAG-001',
+      description: 'Elegant designer handbag crafted from premium materials with spacious interior and elegant hardware.',
+      shortDescription: 'Premium leather designer handbag',
+      price: 285000,
+      compareAtPrice: 350000,
+      categoryId: categories[2].id, // Bags
+      brandId: brands[0].id, // CHOCKY'S
+      stockQuantity: 30,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: false,
+      isOnSale: true,
+    },
+    {
+      name: 'Gold Hoop Earrings',
+      slug: 'gold-hoop-earrings',
+      sku: 'JWL-001',
+      description: 'Beautiful gold-plated hoop earrings with classic design. Perfect for everyday wear or special occasions.',
+      shortDescription: 'Classic gold hoop earrings',
+      price: 75000,
       categoryId: categories[1].id, // Jewelry
       brandId: brands[0].id, // CHOCKY'S
+      stockQuantity: 60,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: false,
+      isBestseller: false,
+    },
+    {
+      name: 'Luxury Perfume Set',
+      slug: 'luxury-perfume-set',
+      sku: 'PERF-001',
+      description: 'Exclusive luxury perfume set featuring premium fragrances for women. Long-lasting and captivating scents.',
+      shortDescription: 'Premium women\'s perfume collection',
+      price: 185000,
+      categoryId: categories[3].id, // Perfumes
+      brandId: brands[0].id, // CHOCKY'S
+      stockQuantity: 45,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: true,
+    },
+    {
+      name: 'Foundation Kit',
+      slug: 'foundation-kit',
+      sku: 'MKP-001',
+      description: 'Complete foundation kit with multiple shades and professional applicators. Buildable coverage for flawless finish.',
+      shortDescription: 'Professional foundation makeup kit',
+      price: 95000,
+      categoryId: categories[4].id, // Makeup
+      brandId: brands[1].id, // Maybelline
+      stockQuantity: 90,
+      isActive: true,
+      isFeatured: false,
+      isNewArrival: false,
+      isBestseller: true,
+    },
+    {
+      name: 'Braiding Hair Extensions',
+      slug: 'braiding-hair-extensions',
+      sku: 'HAIR-001',
+      description: 'High-quality braiding hair extensions for stunning hairstyles. Easy to install and maintain.',
+      shortDescription: 'Premium braiding hair extensions',
+      price: 35000,
+      categoryId: categories[0].id, // Hair
+      brandId: brands[0].id, // CHOCKY'S
+      stockQuantity: 150,
+      isActive: true,
+      isFeatured: false,
+      isNewArrival: false,
+      isBestseller: true,
+    },
+    // Additional products to enrich the catalog
+    {
+      name: 'Diamond Stud Earrings',
+      slug: 'diamond-stud-earrings',
+      sku: 'JWL-002',
+      description: 'Elegant diamond stud earrings with brilliant sparkle. Perfect for formal events and daily sophistication.',
+      shortDescription: 'Sparkling diamond stud earrings',
+      price: 150000,
+      compareAtPrice: 180000,
+      categoryId: categories[1].id, // Jewelry
+      brandId: brands[4].id, // Fenty Beauty
+      stockQuantity: 35,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: true,
+      isOnSale: true,
+    },
+    {
+      name: 'Evening Clutch Bag',
+      slug: 'evening-clutch-bag',
+      sku: 'BAG-002',
+      description: 'Sophisticated evening clutch with elegant design and premium materials. Perfect for special occasions.',
+      shortDescription: 'Elegant evening clutch handbag',
+      price: 95000,
+      categoryId: categories[2].id, // Bags
+      brandId: brands[0].id, // CHOCKY'S
       stockQuantity: 40,
+      isActive: true,
+      isFeatured: false,
+      isNewArrival: true,
+    },
+    {
+      name: 'Men\'s Cologne Set',
+      slug: 'mens-cologne-set',
+      sku: 'PERF-002',
+      description: 'Premium men\'s cologne collection with fresh and masculine fragrances. Long-lasting scent projection.',
+      shortDescription: 'Premium men\'s fragrance collection',
+      price: 165000,
+      categoryId: categories[3].id, // Perfumes
+      brandId: brands[2].id, // L'Oreal
+      stockQuantity: 28,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: false,
+      isBestseller: true,
+    },
+    {
+      name: 'Eyeshadow Palette',
+      slug: 'eyeshadow-palette',
+      sku: 'MKP-002',
+      description: 'Professional eyeshadow palette with 12 blendable shades. Highly pigmented with long-wearing formula.',
+      shortDescription: '12-shade professional eyeshadow palette',
+      price: 75000,
+      categoryId: categories[4].id, // Makeup
+      brandId: brands[3].id, // MAC
+      stockQuantity: 75,
+      isActive: true,
+      isFeatured: true,
+      isNewArrival: false,
+    },
+    {
+      name: 'Moisturizing Cream',
+      slug: 'moisturizing-cream',
+      sku: 'SKIN-002',
+      description: 'Rich moisturizing cream with hyaluronic acid and ceramides. Provides 24-hour hydration for all skin types.',
+      shortDescription: '24-hour hydrating face cream',
+      price: 65000,
+      categoryId: categories[5].id, // Skincare
+      brandId: brands[2].id, // L'Oreal
+      stockQuantity: 110,
+      isActive: true,
+      isFeatured: false,
+      isNewArrival: true,
+    },
+    {
+      name: 'Silk Scarf Collection',
+      slug: 'silk-scarf-collection',
+      sku: 'ACC-001',
+      description: 'Luxurious silk scarves with elegant prints. Versatile accessory for fashion-forward individuals.',
+      shortDescription: 'Premium silk scarf collection',
+      price: 45000,
+      categoryId: categories[2].id, // Bags (Accessories)
+      brandId: brands[0].id, // CHOCKY'S
+      stockQuantity: 55,
       isActive: true,
       isFeatured: true,
       isNewArrival: true,
     },
   ];
 
+  // Create products with images
   for (const productData of products) {
-    await prisma.product.upsert({
+    const product = await prisma.product.upsert({
       where: { slug: productData.slug },
       update: {},
       create: productData,
+    });
+    
+    // Add primary image
+    await prisma.productImage.create({
+      data: {
+        productId: product.id,
+        url: `/images/products/${productData.slug.replace(/-/g, '_')}.jpg`,
+        alt: productData.name,
+        sortOrder: 0,
+        isPrimary: true,
+      },
     });
   }
 
@@ -378,6 +511,90 @@ async function main() {
   }
 
   console.log('Created salon services');
+
+  // Create Testimonials
+  const testimonials = [
+    {
+      name: 'Sarah Nakamya',
+      title: 'Loyal Customer',
+      image: '/images/testimonials/customer1.jpg',
+      content: "CHOCKY'S has completely transformed my beauty routine. The quality of products is amazing!",
+      rating: 5,
+      isActive: true,
+      isFeatured: true,
+      sortOrder: 1,
+    },
+    {
+      name: 'Grace Achieng',
+      title: 'Bridal Client',
+      image: '/images/testimonials/customer2.jpg',
+      content: 'My wedding makeup was absolutely perfect! The team made me feel like a queen.',
+      rating: 5,
+      isActive: true,
+      isFeatured: true,
+      sortOrder: 2,
+    },
+    {
+      name: 'Diana Opio',
+      title: 'Regular Client',
+      image: '/images/testimonials/customer3.jpg',
+      content: 'I love the variety of products available. Everything is authentic and reasonably priced.',
+      rating: 5,
+      isActive: true,
+      isFeatured: true,
+      sortOrder: 3,
+    },
+  ];
+
+  for (const testimonial of testimonials) {
+    await prisma.testimonial.create({
+      data: testimonial,
+    });
+  }
+
+  console.log('Created testimonials');
+
+  // Create Hero Banners
+  const banners = [
+    {
+      title: 'Summer Beauty Sale',
+      subtitle: 'Up to 50% off selected items',
+      image: '/images/banners/summer-sale.jpg',
+      link: '/shop',
+      buttonText: 'Shop Now',
+      position: 'hero',
+      sortOrder: 1,
+      isActive: true,
+    },
+    {
+      title: 'New Arrivals',
+      subtitle: 'Discover our latest beauty essentials',
+      image: '/images/banners/new-arrivals.jpg',
+      link: '/shop?new=true',
+      buttonText: 'Explore',
+      position: 'hero',
+      sortOrder: 2,
+      isActive: true,
+    },
+    {
+      title: 'Salon Services',
+      subtitle: 'Professional beauty treatments',
+      image: '/images/banners/salon-services.jpg',
+      link: '/salon',
+      buttonText: 'Book Now',
+      position: 'hero',
+      sortOrder: 3,
+      isActive: true,
+    },
+  ];
+
+  for (const banner of banners) {
+    await prisma.banner.create({
+      data: banner,
+    });
+  }
+
+  console.log('Created banners');
 
   // Create Site Settings
   const settings = [

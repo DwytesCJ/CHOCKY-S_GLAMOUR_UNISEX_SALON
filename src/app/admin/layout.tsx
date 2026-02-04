@@ -31,6 +31,9 @@ export default function AdminLayout({
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState<number>(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -39,6 +42,36 @@ export default function AdminLayout({
       router.push('/');
     }
   }, [status, session, router]);
+
+  // Fetch real notification count from database
+  useEffect(() => {
+    if (status === 'authenticated' && (session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN')) {
+      const fetchNotifications = async () => {
+        try {
+          setNotificationsLoading(true);
+          setNotificationError(null);
+          
+          const res = await fetch('/api/admin/notifications');
+          const data = await res.json();
+          
+          if (data.success) {
+            setNotificationCount(data.data.total);
+          } else {
+            console.warn('Notification API returned error:', data.error);
+            setNotificationCount(0);
+          }
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+          setNotificationError('Failed to load notifications');
+          setNotificationCount(0);
+        } finally {
+          setNotificationsLoading(false);
+        }
+      };
+
+      fetchNotifications();
+    }
+  }, [status, session]);
 
   if (status === 'loading') {
     return (
@@ -166,9 +199,11 @@ export default function AdminLayout({
             {/* Notifications */}
             <button className="relative text-gray-600 hover:text-gray-900">
               <i className="fas fa-bell text-xl"></i>
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
+              {!notificationsLoading && notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
             </button>
 
             {/* User menu */}

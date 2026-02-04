@@ -29,113 +29,38 @@ export default function AdminProducts() {
   const productsPerPage = 10;
 
   useEffect(() => {
-    // Simulated data - replace with actual API calls
     const fetchProducts = async () => {
       try {
-        const mockProducts: Product[] = [
-          {
-            id: '1',
-            name: 'Luxury Matte Lipstick - Ruby Red',
-            sku: 'LIP-001',
-            price: 45000,
-            compareAtPrice: 55000,
-            category: 'Makeup',
-            stockQuantity: 25,
-            isActive: true,
-            isFeatured: true,
-            image: '/images/products/makeup/lipstick-1.jpg',
-            createdAt: '2024-01-10T10:00:00Z',
-          },
-          {
-            id: '2',
-            name: 'Brazilian Human Hair Wig - 20 inch',
-            sku: 'WIG-001',
-            price: 850000,
-            category: 'Hair',
-            stockQuantity: 8,
-            isActive: true,
-            isFeatured: true,
-            image: '/images/products/hair/wig-1.jpg',
-            createdAt: '2024-01-09T14:30:00Z',
-          },
-          {
-            id: '3',
-            name: 'Gold Plated Earrings Set',
-            sku: 'JWL-001',
-            price: 120000,
-            compareAtPrice: 150000,
-            category: 'Jewelry',
-            stockQuantity: 15,
-            isActive: true,
-            isFeatured: false,
-            image: '/images/products/jewelry/earrings-1.jpg',
-            createdAt: '2024-01-08T09:15:00Z',
-          },
-          {
-            id: '4',
-            name: 'Designer Leather Handbag',
-            sku: 'BAG-001',
-            price: 280000,
-            category: 'Bags',
-            stockQuantity: 5,
-            isActive: true,
-            isFeatured: true,
-            image: '/images/products/bags/handbag-1.jpg',
-            createdAt: '2024-01-07T16:45:00Z',
-          },
-          {
-            id: '5',
-            name: 'Chanel No. 5 Perfume - 100ml',
-            sku: 'PRF-001',
-            price: 450000,
-            category: 'Perfumes',
-            stockQuantity: 12,
-            isActive: true,
-            isFeatured: true,
-            image: '/images/products/perfumes/chanel-1.jpg',
-            createdAt: '2024-01-06T11:20:00Z',
-          },
-          {
-            id: '6',
-            name: 'Vitamin C Brightening Serum',
-            sku: 'SKN-001',
-            price: 85000,
-            category: 'Skincare',
-            stockQuantity: 30,
-            isActive: true,
-            isFeatured: false,
-            image: '/images/products/skincare/serum-1.jpg',
-            createdAt: '2024-01-05T13:00:00Z',
-          },
-          {
-            id: '7',
-            name: 'Foundation - Medium Beige',
-            sku: 'MKP-002',
-            price: 75000,
-            category: 'Makeup',
-            stockQuantity: 0,
-            isActive: false,
-            isFeatured: false,
-            image: '/images/products/makeup/foundation-1.jpg',
-            createdAt: '2024-01-04T10:30:00Z',
-          },
-          {
-            id: '8',
-            name: 'Pearl Necklace - Classic',
-            sku: 'JWL-002',
-            price: 180000,
-            category: 'Jewelry',
-            stockQuantity: 3,
-            isActive: true,
-            isFeatured: false,
-            image: '/images/products/jewelry/necklace-1.jpg',
-            createdAt: '2024-01-03T15:45:00Z',
-          },
-        ];
-        setProducts(mockProducts);
-        setLoading(false);
+        setLoading(true);
+        const response = await fetch('/api/admin/products');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to match component interface
+          const transformedProducts = data.data.map((product: any) => ({
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            price: Number(product.price),
+            compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : undefined,
+            category: product.category?.name || 'Uncategorized',
+            stockQuantity: product.stockQuantity || 0,
+            isActive: product.isActive ?? true,
+            isFeatured: product.isFeatured ?? false,
+            image: product.images?.[0]?.url || '/images/placeholder.jpg',
+            createdAt: product.createdAt
+          }));
+          
+          setProducts(transformedProducts);
+        } else {
+          // Fallback to empty array if API fails
+          setProducts([]);
+        }
       } catch (error) {
         console.error('Error fetching products:', error);
+        // Fallback to empty array on error
+        setProducts([]);
+      } finally {
         setLoading(false);
       }
     };
@@ -151,17 +76,30 @@ export default function AdminProducts() {
     }).format(amount);
   };
 
-  const categories = ['all', 'Makeup', 'Hair', 'Jewelry', 'Bags', 'Perfumes', 'Skincare'];
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-UG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const getStatusColor = (status: boolean) => {
+    return status 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-red-100 text-red-800';
+  };
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-    const matchesStatus = statusFilter === 'all' ||
+    const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && product.isActive) ||
-      (statusFilter === 'inactive' && !product.isActive) ||
-      (statusFilter === 'low-stock' && product.stockQuantity <= 5 && product.stockQuantity > 0) ||
-      (statusFilter === 'out-of-stock' && product.stockQuantity === 0);
+      (statusFilter === 'inactive' && !product.isActive);
+    
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -171,26 +109,14 @@ export default function AdminProducts() {
     currentPage * productsPerPage
   );
 
-  const handleSelectAll = () => {
-    if (selectedProducts.length === paginatedProducts.length) {
-      setSelectedProducts([]);
-    } else {
-      setSelectedProducts(paginatedProducts.map((p) => p.id));
-    }
-  };
-
-  const handleSelectProduct = (productId: string) => {
-    if (selectedProducts.includes(productId)) {
-      setSelectedProducts(selectedProducts.filter((id) => id !== productId));
-    } else {
-      setSelectedProducts([...selectedProducts, productId]);
-    }
-  };
-
-  const getStockStatus = (quantity: number) => {
-    if (quantity === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (quantity <= 5) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-    return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
+  // Calculate stats
+  const stats = {
+    total: products.length,
+    active: products.filter((p) => p.isActive).length,
+    featured: products.filter((p) => p.isFeatured).length,
+    lowStock: products.filter((p) => p.stockQuantity <= 5).length,
+    outOfStock: products.filter((p) => p.stockQuantity === 0).length,
+    totalValue: products.reduce((sum, p) => sum + (p.price * p.stockQuantity), 0),
   };
 
   if (loading) {
@@ -207,7 +133,7 @@ export default function AdminProducts() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-600">Manage your product inventory</p>
+          <p className="text-gray-600">Manage your product catalog</p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
@@ -228,6 +154,45 @@ export default function AdminProducts() {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <p className="text-sm text-gray-500">Total Products</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+        </div>
+        <div className="bg-green-50 rounded-lg shadow-sm border border-green-100 p-4">
+          <p className="text-sm text-green-600">Active</p>
+          <p className="text-2xl font-bold text-green-700">{stats.active}</p>
+        </div>
+        <div className="bg-yellow-50 rounded-lg shadow-sm border border-yellow-100 p-4">
+          <p className="text-sm text-yellow-600">Featured</p>
+          <p className="text-2xl font-bold text-yellow-700">{stats.featured}</p>
+        </div>
+        <div className="bg-orange-50 rounded-lg shadow-sm border border-orange-100 p-4">
+          <p className="text-sm text-orange-600">Low Stock</p>
+          <p className="text-2xl font-bold text-orange-700">{stats.lowStock}</p>
+        </div>
+        <div className="bg-red-50 rounded-lg shadow-sm border border-red-100 p-4">
+          <p className="text-sm text-red-600">Out of Stock</p>
+          <p className="text-2xl font-bold text-red-700">{stats.outOfStock}</p>
+        </div>
+      </div>
+
+      {/* Inventory Value Card */}
+      <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl shadow-sm p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-pink-100 font-medium">Total Inventory Value</p>
+            <p className="text-3xl font-bold mt-1">{formatCurrency(stats.totalValue)}</p>
+          </div>
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -239,7 +204,7 @@ export default function AdminProducts() {
               </svg>
               <input
                 type="text"
-                placeholder="Search products by name or SKU..."
+                placeholder="Search by name, SKU or category..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
@@ -248,22 +213,24 @@ export default function AdminProducts() {
           </div>
 
           {/* Category Filter */}
-          <div className="w-full md:w-48">
+          <div className="w-full md:w-40">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
             >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat === 'all' ? 'All Categories' : cat}
-                </option>
-              ))}
+              <option value="all">All Categories</option>
+              <option value="Hair Styling">Hair Styling</option>
+              <option value="Makeup">Makeup</option>
+              <option value="Skincare">Skincare</option>
+              <option value="Perfumes & Fragrances">Perfumes</option>
+              <option value="Jewelry & Ornaments">Jewelry</option>
+              <option value="Bags & Accessories">Bags</option>
             </select>
           </div>
 
           {/* Status Filter */}
-          <div className="w-full md:w-48">
+          <div className="w-full md:w-40">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -272,32 +239,10 @@ export default function AdminProducts() {
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
-              <option value="low-stock">Low Stock</option>
-              <option value="out-of-stock">Out of Stock</option>
             </select>
           </div>
         </div>
       </div>
-
-      {/* Bulk Actions */}
-      {selectedProducts.length > 0 && (
-        <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 flex items-center justify-between">
-          <span className="text-pink-800 font-medium">
-            {selectedProducts.length} product(s) selected
-          </span>
-          <div className="flex gap-2">
-            <button className="px-3 py-1.5 bg-white border border-pink-300 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors text-sm">
-              Activate
-            </button>
-            <button className="px-3 py-1.5 bg-white border border-pink-300 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors text-sm">
-              Deactivate
-            </button>
-            <button className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Products Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -305,14 +250,6 @@ export default function AdminProducts() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-4 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedProducts.length === paginatedProducts.length && paginatedProducts.length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-pink-500 focus:ring-pink-500"
-                  />
-                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
@@ -331,96 +268,98 @@ export default function AdminProducts() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Featured
+                </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginatedProducts.map((product) => {
-                const stockStatus = getStockStatus(product.stockQuantity);
-                return (
-                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedProducts.includes(product.id)}
-                        onChange={() => handleSelectProduct(product.id)}
-                        className="rounded border-gray-300 text-pink-500 focus:ring-pink-500"
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 line-clamp-1">{product.name}</p>
-                          {product.isFeatured && (
-                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-pink-100 text-pink-800 rounded-full">
-                              Featured
-                            </span>
-                          )}
-                        </div>
+              {paginatedProducts.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
                       </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{product.sku}</td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{product.category}</td>
-                    <td className="px-4 py-4">
                       <div>
-                        <p className="font-medium text-gray-900">{formatCurrency(product.price)}</p>
-                        {product.compareAtPrice && (
-                          <p className="text-sm text-gray-400 line-through">
-                            {formatCurrency(product.compareAtPrice)}
-                          </p>
-                        )}
+                        <p className="font-medium text-gray-900">{product.name}</p>
+                        <p className="text-xs text-gray-500">Added {formatDate(product.createdAt)}</p>
                       </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${stockStatus.color}`}>
-                          {stockStatus.label}
-                        </span>
-                        <span className="text-sm text-gray-600">({product.stockQuantity})</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        product.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {product.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/admin/products/${product.id}`}
-                          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                          title="Edit"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </Link>
-                        <button
-                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className="font-mono text-sm text-gray-900">{product.sku}</span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className="text-sm text-gray-900">{product.category}</span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div>
+                      <p className="font-medium text-gray-900">{formatCurrency(product.price)}</p>
+                      {product.compareAtPrice && (
+                        <p className="text-sm text-gray-500 line-through">
+                          {formatCurrency(product.compareAtPrice)}
+                        </p>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      product.stockQuantity === 0
+                        ? 'bg-red-100 text-red-800'
+                        : product.stockQuantity <= 5
+                        ? 'bg-orange-100 text-orange-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {product.stockQuantity} in stock
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(product.isActive)}`}>
+                      {product.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      product.isFeatured 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {product.isFeatured ? 'Featured' : 'Regular'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/admin/products/${product.id}`}
+                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Edit Product"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </Link>
+                      <button
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete Product"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -473,19 +412,19 @@ export default function AdminProducts() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-gray-500">
             {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
               ? 'Try adjusting your search or filter criteria'
-              : 'Get started by adding your first product'}
+              : 'Products will appear here when you add them to your catalog'}
           </p>
           <Link
             href="/admin/products/new"
-            className="inline-flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+            className="mt-4 inline-flex items-center px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Product
+            Add Your First Product
           </Link>
         </div>
       )}

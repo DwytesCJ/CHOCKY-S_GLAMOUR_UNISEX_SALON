@@ -34,141 +34,43 @@ export default function AdminOrders() {
   const ordersPerPage = 10;
 
   useEffect(() => {
-    // Simulated data - replace with actual API calls
     const fetchOrders = async () => {
       try {
-        const mockOrders: Order[] = [
-          {
-            id: '1',
-            orderNumber: 'CHK-2024-001',
+        setLoading(true);
+        const response = await fetch('/api/admin/orders');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to match component interface
+          const transformedOrders = data.data.map((order: any) => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
             customer: {
-              name: 'Sarah Nakamya',
-              email: 'sarah@example.com',
-              phone: '+256701234567',
+              name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim() || order.email || 'Customer',
+              email: order.user?.email || order.email || 'customer@example.com',
+              phone: order.user?.phone || '+256700000000',
             },
-            items: 3,
-            subtotal: 175000,
-            shippingCost: 10000,
-            totalAmount: 185000,
-            status: 'PENDING',
-            paymentStatus: 'PENDING',
-            paymentMethod: 'MTN_MOBILE_MONEY',
-            shippingMethod: 'STANDARD',
-            createdAt: '2024-01-15T10:30:00Z',
-          },
-          {
-            id: '2',
-            orderNumber: 'CHK-2024-002',
-            customer: {
-              name: 'Grace Auma',
-              email: 'grace@example.com',
-              phone: '+256702345678',
-            },
-            items: 5,
-            subtotal: 310000,
-            shippingCost: 10000,
-            totalAmount: 320000,
-            status: 'PROCESSING',
-            paymentStatus: 'COMPLETED',
-            paymentMethod: 'PAYPAL',
-            shippingMethod: 'EXPRESS',
-            createdAt: '2024-01-15T09:15:00Z',
-          },
-          {
-            id: '3',
-            orderNumber: 'CHK-2024-003',
-            customer: {
-              name: 'Faith Nambi',
-              email: 'faith@example.com',
-              phone: '+256703456789',
-            },
-            items: 2,
-            subtotal: 85000,
-            shippingCost: 10000,
-            totalAmount: 95000,
-            status: 'SHIPPED',
-            paymentStatus: 'COMPLETED',
-            paymentMethod: 'MTN_MOBILE_MONEY',
-            shippingMethod: 'STANDARD',
-            createdAt: '2024-01-14T16:45:00Z',
-          },
-          {
-            id: '4',
-            orderNumber: 'CHK-2024-004',
-            customer: {
-              name: 'Joy Atim',
-              email: 'joy@example.com',
-              phone: '+256704567890',
-            },
-            items: 8,
-            subtotal: 440000,
-            shippingCost: 10000,
-            totalAmount: 450000,
-            status: 'DELIVERED',
-            paymentStatus: 'COMPLETED',
-            paymentMethod: 'CREDIT_CARD',
-            shippingMethod: 'EXPRESS',
-            createdAt: '2024-01-14T14:20:00Z',
-          },
-          {
-            id: '5',
-            orderNumber: 'CHK-2024-005',
-            customer: {
-              name: 'Peace Nakato',
-              email: 'peace@example.com',
-              phone: '+256705678901',
-            },
-            items: 4,
-            subtotal: 265000,
-            shippingCost: 10000,
-            totalAmount: 275000,
-            status: 'PENDING',
-            paymentStatus: 'PENDING',
-            paymentMethod: 'AIRTEL_MONEY',
-            shippingMethod: 'STANDARD',
-            createdAt: '2024-01-14T11:00:00Z',
-          },
-          {
-            id: '6',
-            orderNumber: 'CHK-2024-006',
-            customer: {
-              name: 'Hope Achieng',
-              email: 'hope@example.com',
-              phone: '+256706789012',
-            },
-            items: 1,
-            subtotal: 850000,
-            shippingCost: 0,
-            totalAmount: 850000,
-            status: 'CONFIRMED',
-            paymentStatus: 'COMPLETED',
-            paymentMethod: 'PAYPAL',
-            shippingMethod: 'PICKUP',
-            createdAt: '2024-01-13T15:30:00Z',
-          },
-          {
-            id: '7',
-            orderNumber: 'CHK-2024-007',
-            customer: {
-              name: 'Mercy Nalubega',
-              email: 'mercy@example.com',
-              phone: '+256707890123',
-            },
-            items: 6,
-            subtotal: 520000,
-            shippingCost: 15000,
-            totalAmount: 535000,
-            status: 'CANCELLED',
-            paymentStatus: 'REFUNDED',
-            paymentMethod: 'MTN_MOBILE_MONEY',
-            shippingMethod: 'EXPRESS',
-            createdAt: '2024-01-12T09:45:00Z',
-          },
-        ];
-        setOrders(mockOrders);
-        setLoading(false);
+            items: order.orderItems?.length || 0,
+            subtotal: Number(order.subtotal) || 0,
+            shippingCost: Number(order.shippingCost) || 0,
+            totalAmount: Number(order.totalAmount) || 0,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod || 'UNKNOWN',
+            shippingMethod: order.shippingMethod || 'STANDARD',
+            createdAt: order.createdAt
+          }));
+          
+          setOrders(transformedOrders);
+        } else {
+          // Fallback to empty array if API fails
+          setOrders([]);
+        }
       } catch (error) {
         console.error('Error fetching orders:', error);
+        // Fallback to empty array on error
+        setOrders([]);
+      } finally {
         setLoading(false);
       }
     };
@@ -197,38 +99,23 @@ export default function AdminOrders() {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       PENDING: 'bg-yellow-100 text-yellow-800',
-      CONFIRMED: 'bg-blue-100 text-blue-800',
-      PROCESSING: 'bg-purple-100 text-purple-800',
-      SHIPPED: 'bg-indigo-100 text-indigo-800',
-      OUT_FOR_DELIVERY: 'bg-cyan-100 text-cyan-800',
+      PROCESSING: 'bg-blue-100 text-blue-800',
+      SHIPPED: 'bg-purple-100 text-purple-800',
       DELIVERED: 'bg-green-100 text-green-800',
       CANCELLED: 'bg-red-100 text-red-800',
-      REFUNDED: 'bg-orange-100 text-orange-800',
+      RETURNED: 'bg-gray-100 text-gray-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const getPaymentStatusColor = (status: string) => {
+  const getPaymentColor = (status: string) => {
     const colors: Record<string, string> = {
       PENDING: 'bg-yellow-100 text-yellow-800',
-      PROCESSING: 'bg-blue-100 text-blue-800',
       COMPLETED: 'bg-green-100 text-green-800',
       FAILED: 'bg-red-100 text-red-800',
-      REFUNDED: 'bg-orange-100 text-orange-800',
+      REFUNDED: 'bg-gray-100 text-gray-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      MTN_MOBILE_MONEY: 'MTN MoMo',
-      AIRTEL_MONEY: 'Airtel Money',
-      PAYPAL: 'PayPal',
-      CREDIT_CARD: 'Credit Card',
-      CASH_ON_DELIVERY: 'COD',
-      BANK_TRANSFER: 'Bank Transfer',
-    };
-    return labels[method] || method;
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -239,27 +126,7 @@ export default function AdminOrders() {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     const matchesPayment = paymentFilter === 'all' || order.paymentStatus === paymentFilter;
     
-    // Date filter logic
-    let matchesDate = true;
-    if (dateFilter !== 'all') {
-      const orderDate = new Date(order.createdAt);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (dateFilter === 'today') {
-        matchesDate = orderDate >= today;
-      } else if (dateFilter === 'week') {
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        matchesDate = orderDate >= weekAgo;
-      } else if (dateFilter === 'month') {
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        matchesDate = orderDate >= monthAgo;
-      }
-    }
-    
-    return matchesSearch && matchesStatus && matchesPayment && matchesDate;
+    return matchesSearch && matchesStatus && matchesPayment;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
@@ -268,22 +135,6 @@ export default function AdminOrders() {
     currentPage * ordersPerPage
   );
 
-  const handleSelectAll = () => {
-    if (selectedOrders.length === paginatedOrders.length) {
-      setSelectedOrders([]);
-    } else {
-      setSelectedOrders(paginatedOrders.map((o) => o.id));
-    }
-  };
-
-  const handleSelectOrder = (orderId: string) => {
-    if (selectedOrders.includes(orderId)) {
-      setSelectedOrders(selectedOrders.filter((id) => id !== orderId));
-    } else {
-      setSelectedOrders([...selectedOrders, orderId]);
-    }
-  };
-
   // Calculate stats
   const stats = {
     total: orders.length,
@@ -291,6 +142,7 @@ export default function AdminOrders() {
     processing: orders.filter((o) => o.status === 'PROCESSING').length,
     shipped: orders.filter((o) => o.status === 'SHIPPED').length,
     delivered: orders.filter((o) => o.status === 'DELIVERED').length,
+    revenue: orders.reduce((sum, o) => sum + o.totalAmount, 0),
   };
 
   if (loading) {
@@ -307,7 +159,7 @@ export default function AdminOrders() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600">Manage and track customer orders</p>
+          <p className="text-gray-600">Manage customer orders</p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
@@ -329,17 +181,32 @@ export default function AdminOrders() {
           <p className="text-sm text-yellow-600">Pending</p>
           <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
         </div>
-        <div className="bg-purple-50 rounded-lg shadow-sm border border-purple-100 p-4">
-          <p className="text-sm text-purple-600">Processing</p>
-          <p className="text-2xl font-bold text-purple-700">{stats.processing}</p>
+        <div className="bg-blue-50 rounded-lg shadow-sm border border-blue-100 p-4">
+          <p className="text-sm text-blue-600">Processing</p>
+          <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
         </div>
-        <div className="bg-indigo-50 rounded-lg shadow-sm border border-indigo-100 p-4">
-          <p className="text-sm text-indigo-600">Shipped</p>
-          <p className="text-2xl font-bold text-indigo-700">{stats.shipped}</p>
+        <div className="bg-purple-50 rounded-lg shadow-sm border border-purple-100 p-4">
+          <p className="text-sm text-purple-600">Shipped</p>
+          <p className="text-2xl font-bold text-purple-700">{stats.shipped}</p>
         </div>
         <div className="bg-green-50 rounded-lg shadow-sm border border-green-100 p-4">
           <p className="text-sm text-green-600">Delivered</p>
           <p className="text-2xl font-bold text-green-700">{stats.delivered}</p>
+        </div>
+      </div>
+
+      {/* Revenue Card */}
+      <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl shadow-sm p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-pink-100 font-medium">Total Revenue</p>
+            <p className="text-3xl font-bold mt-1">{formatCurrency(stats.revenue)}</p>
+          </div>
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -371,7 +238,6 @@ export default function AdminOrders() {
             >
               <option value="all">All Status</option>
               <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
               <option value="PROCESSING">Processing</option>
               <option value="SHIPPED">Shipped</option>
               <option value="DELIVERED">Delivered</option>
@@ -390,45 +256,10 @@ export default function AdminOrders() {
               <option value="PENDING">Pending</option>
               <option value="COMPLETED">Completed</option>
               <option value="FAILED">Failed</option>
-              <option value="REFUNDED">Refunded</option>
-            </select>
-          </div>
-
-          {/* Date Filter */}
-          <div className="w-full md:w-40">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
             </select>
           </div>
         </div>
       </div>
-
-      {/* Bulk Actions */}
-      {selectedOrders.length > 0 && (
-        <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 flex items-center justify-between">
-          <span className="text-pink-800 font-medium">
-            {selectedOrders.length} order(s) selected
-          </span>
-          <div className="flex gap-2">
-            <button className="px-3 py-1.5 bg-white border border-pink-300 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors text-sm">
-              Mark as Processing
-            </button>
-            <button className="px-3 py-1.5 bg-white border border-pink-300 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors text-sm">
-              Mark as Shipped
-            </button>
-            <button className="px-3 py-1.5 bg-white border border-pink-300 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors text-sm">
-              Print Invoices
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Orders Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -436,14 +267,6 @@ export default function AdminOrders() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-4 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedOrders.length === paginatedOrders.length && paginatedOrders.length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-pink-500 focus:ring-pink-500"
-                  />
-                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Order
                 </th>
@@ -457,10 +280,10 @@ export default function AdminOrders() {
                   Total
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
+                  Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Payment
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
@@ -473,14 +296,6 @@ export default function AdminOrders() {
             <tbody className="divide-y divide-gray-100">
               {paginatedOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedOrders.includes(order.id)}
-                      onChange={() => handleSelectOrder(order.id)}
-                      className="rounded border-gray-300 text-pink-500 focus:ring-pink-500"
-                    />
-                  </td>
                   <td className="px-4 py-4">
                     <Link
                       href={`/admin/orders/${order.id}`}
@@ -495,21 +310,20 @@ export default function AdminOrders() {
                       <p className="text-sm text-gray-500">{order.customer.email}</p>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-sm text-gray-600">
-                    {order.items} item{order.items > 1 ? 's' : ''}
+                  <td className="px-4 py-4">
+                    <span className="font-medium text-gray-900">{order.items}</span>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="font-medium text-gray-900">{formatCurrency(order.totalAmount)}</p>
-                    <p className="text-xs text-gray-500">{getPaymentMethodLabel(order.paymentMethod)}</p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
-                      {order.paymentStatus}
-                    </span>
+                    <span className="font-medium text-gray-900">{formatCurrency(order.totalAmount)}</span>
                   </td>
                   <td className="px-4 py-4">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                       {order.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentColor(order.paymentStatus)}`}>
+                      {order.paymentStatus}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-500">
@@ -592,7 +406,7 @@ export default function AdminOrders() {
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
           <p className="text-gray-500">
-            {searchQuery || statusFilter !== 'all' || paymentFilter !== 'all' || dateFilter !== 'all'
+            {searchQuery || statusFilter !== 'all' || paymentFilter !== 'all'
               ? 'Try adjusting your search or filter criteria'
               : 'Orders will appear here when customers make purchases'}
           </p>

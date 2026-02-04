@@ -30,135 +30,40 @@ export default function AdminCustomers() {
   const customersPerPage = 10;
 
   useEffect(() => {
-    // Simulated data - replace with actual API calls
     const fetchCustomers = async () => {
       try {
-        const mockCustomers: Customer[] = [
-          {
-            id: '1',
-            firstName: 'Sarah',
-            lastName: 'Nakamya',
-            email: 'sarah@example.com',
-            phone: '+256701234567',
-            avatar: null,
-            isActive: true,
-            totalOrders: 12,
-            totalSpent: 2450000,
-            rewardPoints: 2450,
-            rewardTier: 'Gold',
-            lastOrderDate: '2024-01-15T10:30:00Z',
-            createdAt: '2023-06-15T08:00:00Z',
-          },
-          {
-            id: '2',
-            firstName: 'Grace',
-            lastName: 'Auma',
-            email: 'grace@example.com',
-            phone: '+256702345678',
-            avatar: null,
-            isActive: true,
-            totalOrders: 8,
-            totalSpent: 1280000,
-            rewardPoints: 1280,
-            rewardTier: 'Silver',
-            lastOrderDate: '2024-01-14T14:20:00Z',
-            createdAt: '2023-08-22T10:15:00Z',
-          },
-          {
-            id: '3',
-            firstName: 'Faith',
-            lastName: 'Nambi',
-            email: 'faith@example.com',
-            phone: '+256703456789',
-            avatar: null,
-            isActive: true,
-            totalOrders: 5,
-            totalSpent: 650000,
-            rewardPoints: 650,
-            rewardTier: 'Silver',
-            lastOrderDate: '2024-01-12T09:45:00Z',
-            createdAt: '2023-09-10T14:30:00Z',
-          },
-          {
-            id: '4',
-            firstName: 'Joy',
-            lastName: 'Atim',
-            email: 'joy@example.com',
-            phone: '+256704567890',
-            avatar: null,
-            isActive: true,
-            totalOrders: 3,
-            totalSpent: 380000,
-            rewardPoints: 380,
-            rewardTier: 'Bronze',
-            lastOrderDate: '2024-01-10T16:00:00Z',
-            createdAt: '2023-10-05T11:20:00Z',
-          },
-          {
-            id: '5',
-            firstName: 'Peace',
-            lastName: 'Nakato',
-            email: 'peace@example.com',
-            phone: '+256705678901',
-            avatar: null,
-            isActive: true,
-            totalOrders: 15,
-            totalSpent: 3200000,
-            rewardPoints: 3200,
-            rewardTier: 'Gold',
-            lastOrderDate: '2024-01-13T11:30:00Z',
-            createdAt: '2023-04-18T09:00:00Z',
-          },
-          {
-            id: '6',
-            firstName: 'Hope',
-            lastName: 'Achieng',
-            email: 'hope@example.com',
-            phone: '+256706789012',
-            avatar: null,
-            isActive: false,
-            totalOrders: 2,
-            totalSpent: 180000,
-            rewardPoints: 180,
-            rewardTier: 'Bronze',
-            lastOrderDate: '2023-11-20T13:15:00Z',
-            createdAt: '2023-11-01T15:45:00Z',
-          },
-          {
-            id: '7',
-            firstName: 'Mercy',
-            lastName: 'Nalubega',
-            email: 'mercy@example.com',
-            phone: '+256707890123',
-            avatar: null,
-            isActive: true,
-            totalOrders: 7,
-            totalSpent: 920000,
-            rewardPoints: 920,
-            rewardTier: 'Silver',
-            lastOrderDate: '2024-01-08T10:00:00Z',
-            createdAt: '2023-07-25T12:30:00Z',
-          },
-          {
-            id: '8',
-            firstName: 'Blessing',
-            lastName: 'Okello',
-            email: 'blessing@example.com',
-            phone: '+256708901234',
-            avatar: null,
-            isActive: true,
-            totalOrders: 1,
-            totalSpent: 95000,
-            rewardPoints: 95,
-            rewardTier: 'Bronze',
-            lastOrderDate: '2024-01-05T14:45:00Z',
-            createdAt: '2024-01-05T14:00:00Z',
-          },
-        ];
-        setCustomers(mockCustomers);
-        setLoading(false);
+        setLoading(true);
+        const response = await fetch('/api/admin/customers');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to match component interface
+          const transformedCustomers = data.data.map((user: any) => ({
+            id: user.id,
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email,
+            phone: user.phone || '+256700000000',
+            avatar: user.image || null,
+            isActive: user.isActive ?? true,
+            totalOrders: 0, // Would need order API to populate this
+            totalSpent: 0,  // Would need order API to populate this
+            rewardPoints: 0, // Would need rewards system
+            rewardTier: 'Bronze', // Default tier
+            lastOrderDate: null,
+            createdAt: user.createdAt
+          }));
+          
+          setCustomers(transformedCustomers);
+        } else {
+          // Fallback to empty array if API fails
+          setCustomers([]);
+        }
       } catch (error) {
         console.error('Error fetching customers:', error);
+        // Fallback to empty array on error
+        setCustomers([]);
+      } finally {
         setLoading(false);
       }
     };
