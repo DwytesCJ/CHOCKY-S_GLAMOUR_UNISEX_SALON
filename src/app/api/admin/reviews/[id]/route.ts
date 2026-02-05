@@ -5,17 +5,18 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const review = await prisma.review.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         product: {
           select: {
@@ -56,10 +57,11 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,7 +71,7 @@ export async function PUT(
     const { isApproved, helpfulCount } = body;
 
     const review = await prisma.review.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!review) {
@@ -90,7 +92,7 @@ export async function PUT(
     }
 
     const updatedReview = await prisma.review.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         product: {
@@ -118,7 +120,7 @@ export async function PUT(
         userId: session.user.id,
         action: 'UPDATE_REVIEW',
         entity: 'Review',
-        entityId: params.id,
+        entityId: id,
         details: `Updated review for product: ${updatedReview.product.name}`
       }
     });
@@ -136,17 +138,18 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const review = await prisma.review.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         product: {
           select: {
@@ -164,7 +167,7 @@ export async function DELETE(
     }
 
     await prisma.review.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     // Log activity
@@ -173,7 +176,7 @@ export async function DELETE(
         userId: session.user.id,
         action: 'DELETE_REVIEW',
         entity: 'Review',
-        entityId: params.id,
+        entityId: id,
         details: `Deleted review for product: ${review.product.name}`
       }
     });

@@ -6,17 +6,18 @@ import { Prisma } from '@prisma/client';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const coupon = await prisma.coupon.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!coupon) {
@@ -39,10 +40,11 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,7 +68,7 @@ export async function PUT(
     } = body;
 
     const coupon = await prisma.coupon.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!coupon) {
@@ -107,7 +109,7 @@ export async function PUT(
     if (applicableProducts !== undefined) updateData.applicableProducts = applicableProducts;
 
     const updatedCoupon = await prisma.coupon.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData
     });
 
@@ -117,7 +119,7 @@ export async function PUT(
         userId: session.user.id,
         action: 'UPDATE_COUPON',
         entity: 'Coupon',
-        entityId: params.id,
+        entityId: id,
         details: `Updated coupon: ${updatedCoupon.code}`
       }
     });
@@ -135,17 +137,18 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const coupon = await prisma.coupon.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!coupon) {
@@ -156,7 +159,7 @@ export async function DELETE(
     }
 
     await prisma.coupon.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     // Log activity
@@ -165,7 +168,7 @@ export async function DELETE(
         userId: session.user.id,
         action: 'DELETE_COUPON',
         entity: 'Coupon',
-        entityId: params.id,
+        entityId: id,
         details: `Deleted coupon: ${coupon.code}`
       }
     });

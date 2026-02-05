@@ -5,17 +5,18 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const category = await prisma.category.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         parent: {
           select: {
@@ -59,10 +60,11 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -80,7 +82,7 @@ export async function PUT(
     }
 
     const category = await prisma.category.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!category) {
@@ -102,7 +104,7 @@ export async function PUT(
       const existingCategory = await prisma.category.findFirst({
         where: {
           slug,
-          NOT: { id: params.id }
+          NOT: { id }
         }
       });
 
@@ -115,7 +117,7 @@ export async function PUT(
     }
 
     const updatedCategory = await prisma.category.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         slug,
@@ -142,7 +144,7 @@ export async function PUT(
         userId: session.user.id,
         action: 'UPDATE_CATEGORY',
         entity: 'Category',
-        entityId: params.id,
+        entityId: id,
         details: `Updated category: ${updatedCategory.name}`
       }
     });
@@ -160,17 +162,18 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const category = await prisma.category.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         children: true,
         products: true
@@ -200,7 +203,7 @@ export async function DELETE(
     }
 
     await prisma.category.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     // Log activity
@@ -209,7 +212,7 @@ export async function DELETE(
         userId: session.user.id,
         action: 'DELETE_CATEGORY',
         entity: 'Category',
-        entityId: params.id,
+        entityId: id,
         details: `Deleted category: ${category.name}`
       }
     });

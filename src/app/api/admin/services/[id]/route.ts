@@ -6,17 +6,18 @@ import { Prisma } from '@prisma/client';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const service = await prisma.salonService.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: {
           select: {
@@ -55,10 +56,11 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,7 +78,7 @@ export async function PUT(
     }
 
     const service = await prisma.salonService.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!service) {
@@ -98,7 +100,7 @@ export async function PUT(
       const existingService = await prisma.salonService.findFirst({
         where: {
           slug,
-          NOT: { id: params.id }
+          NOT: { id }
         }
       });
 
@@ -111,7 +113,7 @@ export async function PUT(
     }
 
     const updatedService = await prisma.salonService.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         slug,
@@ -138,7 +140,7 @@ export async function PUT(
         userId: session.user.id,
         action: 'UPDATE_SERVICE',
         entity: 'SalonService',
-        entityId: params.id,
+        entityId: id,
         details: `Updated service: ${updatedService.name}`
       }
     });
@@ -156,17 +158,18 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const service = await prisma.salonService.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         appointments: true
       }
@@ -188,7 +191,7 @@ export async function DELETE(
     }
 
     await prisma.salonService.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     // Log activity
@@ -197,7 +200,7 @@ export async function DELETE(
         userId: session.user.id,
         action: 'DELETE_SERVICE',
         entity: 'SalonService',
-        entityId: params.id,
+        entityId: id,
         details: `Deleted service: ${service.name}`
       }
     });

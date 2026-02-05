@@ -168,8 +168,8 @@ export async function PUT(request: Request) {
     });
 
     return NextResponse.json({ 
-      message: `Successfully ${actionText} ${result.count} reviews`,
-      count: result.count
+      message: `Successfully ${actionText} ${result?.count || 0} reviews`,
+      count: result?.count || 0
     });
 
   } catch (error) {
