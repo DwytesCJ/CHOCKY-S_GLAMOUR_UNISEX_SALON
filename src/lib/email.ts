@@ -1,6 +1,12 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY || '');
+  }
+  return _resend;
+}
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://chockys.com';
@@ -130,7 +136,7 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `CHOCKY'S Glamour <${FROM_EMAIL}>`,
       to: [data.email],
       subject: `Order Confirmed - ${data.orderNumber} | CHOCKY'S`,
@@ -197,7 +203,7 @@ export async function sendOrderStatusUpdate(data: {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `CHOCKY'S Glamour <${FROM_EMAIL}>`,
       to: [data.email],
       subject: `Order ${data.status.replace(/_/g, ' ')} - ${data.orderNumber} | CHOCKY'S`,
@@ -263,7 +269,7 @@ export async function sendAppointmentConfirmation(data: AppointmentEmailData) {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `CHOCKY'S Glamour <${FROM_EMAIL}>`,
       to: [data.email],
       subject: `Appointment Confirmed - ${data.date} | CHOCKY'S`,
@@ -310,7 +316,7 @@ export async function sendAppointmentReminder(data: AppointmentEmailData) {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `CHOCKY'S Glamour <${FROM_EMAIL}>`,
       to: [data.email],
       subject: `Reminder: Appointment Tomorrow - ${data.serviceName} | CHOCKY'S`,
@@ -367,7 +373,7 @@ export async function sendWelcomeEmail(data: { email: string; name: string }) {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `CHOCKY'S Glamour <${FROM_EMAIL}>`,
       to: [data.email],
       subject: `Welcome to CHOCKY'S Ultimate Glamour! 🎉`,
@@ -421,7 +427,7 @@ export async function sendDiscountEmail(data: {
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `CHOCKY'S Glamour <${FROM_EMAIL}>`,
       to: [data.email],
       subject: `${data.discountValue} OFF - Exclusive Discount Inside! | CHOCKY'S`,
