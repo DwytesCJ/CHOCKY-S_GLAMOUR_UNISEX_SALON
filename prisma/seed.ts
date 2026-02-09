@@ -760,7 +760,7 @@ async function main() {
 
   for (const zone of shippingZones) {
     await prisma.shippingZone.upsert({
-      where: { name: zone.name },
+      where: { name_district: { name: zone.name, district: zone.district } },
       update: {},
       create: {
         ...zone,
