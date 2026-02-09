@@ -7,33 +7,45 @@ A modern, full-stack e-commerce platform for beauty products and salon services,
 ## 🌟 Features
 
 ### Customer-Facing Website
-- **Homepage** - Hero carousel, featured categories, new arrivals, testimonials
-- **Shop** - Product catalog with filters, sorting, and pagination
-- **Product Details** - Image gallery, variants, reviews, related products
+- **Homepage** - Hero carousel, featured categories, flash deals with countdown timer, recently viewed products, testimonials
+- **Shop** - Product catalog with sidebar filters (category, price range, brand), sorting, grid/list view toggle, pagination
+- **Product Details** - Image gallery with thumbnails, delivery estimation, "Buy Now" button, reviews with star breakdown, related products
+- **Order Tracking** - Visual timeline/stepper for order journey, downloadable receipts
+- **Public Order Tracking** - Track orders by order number without login (`/track`)
 - **Salon Services** - Service listings with stylist profiles
-- **Appointment Booking** - Calendar-based booking system
+- **Appointment Booking** - Calendar-based booking system with email reminders
 - **Blog** - Beauty tips, tutorials, and trends
 - **Rewards Program** - Bronze, Silver, Gold tier loyalty system
-- **User Accounts** - Registration, login, order history, wishlist
+- **User Accounts** - Registration, login, order history, wishlist, notifications
 - **Shopping Cart** - Add/remove items, quantity controls
-- **Checkout** - Multi-step checkout with multiple payment options
+- **Checkout** - Multi-step checkout with distance-based shipping calculation (80+ Uganda town centers)
 - **Wishlist** - Save favorite products
+- **Email Notifications** - Order confirmations, status updates, appointment reminders via Resend
 
 ### Admin Dashboard
-- **Dashboard Overview** - Revenue, orders, customers, products stats
-- **Product Management** - CRUD operations, inventory tracking
-- **Order Management** - Order processing, status updates
-- **Appointment Management** - Calendar and list views
+- **Dashboard Overview** - Revenue, orders, customers, products stats with quick actions and activity feed
+- **Product Management** - Full CRUD with add product form, SKU generation, image management
+- **Category Management** - Create/edit categories with parent hierarchy
+- **Service Management** - Add/edit salon services with category and duration
+- **Order Management** - Status updates with email notifications and tracking number input
+- **Appointment Management** - Calendar/list views, time-remaining badges, color-coded urgency, auto-reminders
 - **Customer Management** - Customer profiles, reward tiers
-- **Settings** - Store settings, payment methods, shipping zones
+- **Blog Management** - Create/edit posts with SEO fields
+- **Coupon Management** - Create discount coupons with usage limits and date ranges
+- **Export System** - Export any data (products, orders, customers, etc.) to CSV or branded PDF
+- **Notification Panel** - Real-time notification dropdown with categorized alerts
+- **Settings** - Store settings, payment methods, distance-based shipping zones management
 
 ### Technical Features
-- **Responsive Design** - Mobile-first approach
+- **Responsive Design** - Mobile-first approach, Jumia-inspired UX
 - **Dark Pink Theme** - Professional color scheme (#e54d6d)
 - **Smooth Animations** - Page transitions, hover effects
 - **WhatsApp Integration** - Floating support button
 - **UGX Currency** - Uganda Shilling formatting
 - **SEO Optimized** - Meta tags, Open Graph
+- **Email Service** - Transactional emails via Resend (order confirmations, receipts, reminders)
+- **Cron Jobs** - Automated appointment reminders via Vercel Cron
+- **PDF Generation** - Branded receipts and export reports
 
 ## 🛠️ Tech Stack
 
@@ -41,15 +53,10 @@ A modern, full-stack e-commerce platform for beauty products and salon services,
 - **Styling**: Tailwind CSS v4
 - **Database**: MySQL with Prisma ORM
 - **Authentication**: NextAuth.js
-- **Icons**: Lucide React
-- **Deployment**: Vercel
-
-## 🔧 Recent Updates (Next.js 15 Migration)
-
-This project has been updated to be compatible with Next.js 15/16. Key changes include:
-- **Async Dynamic Route Params**: Updated all Route Handlers (`api/*`) to await `params` as required by Next.js 15.
-- **Prisma Schema Fixes**: Resolved field naming mismatches in Order and Blog routes to align with `schema.prisma`.
-- **Blog Status Update**: Migrated blog queries to use the `status` enum (`PUBLISHED`) instead of the legacy `isPublished` boolean.
+- **Email**: Resend (transactional emails)
+- **PDF**: jsPDF + jspdf-autotable
+- **Icons**: Font Awesome, Lucide React
+- **Deployment**: Vercel (with Cron support)
 
 ## 📦 Installation
 
@@ -84,6 +91,13 @@ DATABASE_URL="mysql://user:password@localhost:3306/chockys_glamour"
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key"
+
+# Email (Resend)
+RESEND_API_KEY="re_xxxxxxxxx"
+RESEND_FROM_EMAIL="orders@chockys.com"
+
+# Cron Secret
+CRON_SECRET="your-cron-secret"
 
 # Payment (Optional)
 MTN_MOMO_API_KEY="your-mtn-api-key"
@@ -133,7 +147,10 @@ chockys-glamour/
 │   │   └── WishlistContext.tsx
 │   ├── lib/               # Utilities
 │   │   ├── prisma.ts      # Prisma client
-│   │   └── auth.ts        # Auth config
+│   │   ├── auth.ts        # Auth config
+│   │   ├── email.ts       # Resend email service
+│   │   ├── export.ts      # CSV/PDF export utility
+│   │   └── notifications.ts # Notification helpers
 │   └── types/             # TypeScript types
 ├── .env.example           # Environment template
 ├── package.json
@@ -193,15 +210,19 @@ npm start
 ## 📊 Database Schema
 
 Key models:
-- **User** - Customer accounts
-- **Product** - Product catalog
-- **Order** - Customer orders
-- **Appointment** - Salon bookings
+- **User** - Customer accounts with notifications
+- **Product** - Product catalog with images and variants
+- **Order** - Customer orders with tracking events
+- **OrderTrackingEvent** - Granular order status history
+- **Appointment** - Salon bookings with reminder tracking
+- **ShippingZone** - Uganda town centers with distance-based rates
+- **Notification** - User and admin notifications
 - **Review** - Product reviews
 - **CartItem** - Shopping cart
 - **WishlistItem** - Saved products
 - **RewardPoint** - Loyalty points
 - **BlogPost** - Blog articles
+- **Coupon** - Discount codes
 
 ## 🔐 Admin Access
 

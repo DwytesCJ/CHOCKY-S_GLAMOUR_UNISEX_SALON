@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ExportButton from '@/components/admin/ExportButton';
+import { exportConfigs } from '@/lib/export';
 
 interface Coupon {
   id: string;
@@ -104,15 +106,28 @@ export default function AdminCoupons() {
           <h1 className="text-2xl font-bold text-gray-900">Coupons</h1>
           <p className="text-gray-600">Manage discount coupons</p>
         </div>
-        <Link
-          href="/admin/coupons/new"
-          className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Coupon
-        </Link>
+        <div className="flex gap-3">
+          <ExportButton
+            data={coupons}
+            columns={exportConfigs.coupons.columns}
+            filename="chockys-coupons"
+            title="Coupons Report"
+            summary={[
+              { label: 'Total Coupons', value: String(coupons.length) },
+              { label: 'Active', value: String(coupons.filter(c => c.isActive && new Date(c.expiresAt) > new Date()).length) },
+              { label: 'Total Usage', value: String(coupons.reduce((sum, c) => sum + c.usedCount, 0)) },
+            ]}
+          />
+          <Link
+            href="/admin/coupons/new"
+            className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Coupon
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

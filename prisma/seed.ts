@@ -687,6 +687,89 @@ async function main() {
   console.log('Created FAQs');
 
   console.log('');
+  // ========================================
+  // Seed Shipping Zones - Uganda Town Centers
+  // ========================================
+  console.log('Seeding shipping zones...');
+  
+  const shippingZones = [
+    // Central Region
+    { name: 'Kampala Central', district: 'Kampala', region: 'Central', distanceKm: 3, baseFee: 3000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Wandegeya', district: 'Kampala', region: 'Central', distanceKm: 0, baseFee: 0, perKgFee: 0, estimatedDays: 1 },
+    { name: 'Ntinda', district: 'Kampala', region: 'Central', distanceKm: 5, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Nakasero', district: 'Kampala', region: 'Central', distanceKm: 3, baseFee: 3000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Kololo', district: 'Kampala', region: 'Central', distanceKm: 4, baseFee: 4000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Bukoto', district: 'Kampala', region: 'Central', distanceKm: 4, baseFee: 4000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Kamwokya', district: 'Kampala', region: 'Central', distanceKm: 2, baseFee: 2000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Makerere', district: 'Kampala', region: 'Central', distanceKm: 1, baseFee: 2000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Kawempe', district: 'Kampala', region: 'Central', distanceKm: 5, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Rubaga', district: 'Kampala', region: 'Central', distanceKm: 6, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Makindye', district: 'Kampala', region: 'Central', distanceKm: 8, baseFee: 7000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Nansana', district: 'Wakiso', region: 'Central', distanceKm: 12, baseFee: 8000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Kira', district: 'Wakiso', region: 'Central', distanceKm: 12, baseFee: 8000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Entebbe', district: 'Wakiso', region: 'Central', distanceKm: 37, baseFee: 15000, perKgFee: 700, estimatedDays: 1 },
+    { name: 'Mukono Town', district: 'Mukono', region: 'Central', distanceKm: 24, baseFee: 12000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Gayaza', district: 'Wakiso', region: 'Central', distanceKm: 16, baseFee: 10000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Bweyogerere', district: 'Wakiso', region: 'Central', distanceKm: 10, baseFee: 7000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Kasangati', district: 'Wakiso', region: 'Central', distanceKm: 14, baseFee: 9000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Mpigi Town', district: 'Mpigi', region: 'Central', distanceKm: 37, baseFee: 15000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Masaka City', district: 'Masaka', region: 'Central', distanceKm: 130, baseFee: 25000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Mityana Town', district: 'Mityana', region: 'Central', distanceKm: 70, baseFee: 18000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Luweero Town', district: 'Luweero', region: 'Central', distanceKm: 75, baseFee: 18000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Bombo', district: 'Luweero', region: 'Central', distanceKm: 36, baseFee: 15000, perKgFee: 700, estimatedDays: 1 },
+    // Eastern Region
+    { name: 'Jinja City', district: 'Jinja', region: 'Eastern', distanceKm: 80, baseFee: 20000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Iganga Town', district: 'Iganga', region: 'Eastern', distanceKm: 115, baseFee: 23000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Mbale City', district: 'Mbale', region: 'Eastern', distanceKm: 230, baseFee: 30000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Tororo Town', district: 'Tororo', region: 'Eastern', distanceKm: 250, baseFee: 32000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Soroti City', district: 'Soroti', region: 'Eastern', distanceKm: 300, baseFee: 35000, perKgFee: 1000, estimatedDays: 3 },
+    { name: 'Busia Town', district: 'Busia', region: 'Eastern', distanceKm: 200, baseFee: 28000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Kamuli Town', district: 'Kamuli', region: 'Eastern', distanceKm: 140, baseFee: 25000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Bugiri Town', district: 'Bugiri', region: 'Eastern', distanceKm: 165, baseFee: 27000, perKgFee: 800, estimatedDays: 3 },
+    { name: 'Pallisa Town', district: 'Pallisa', region: 'Eastern', distanceKm: 220, baseFee: 30000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Kumi Town', district: 'Kumi', region: 'Eastern', distanceKm: 280, baseFee: 33000, perKgFee: 1000, estimatedDays: 3 },
+    { name: 'Kapchorwa Town', district: 'Kapchorwa', region: 'Eastern', distanceKm: 280, baseFee: 35000, perKgFee: 1000, estimatedDays: 4 },
+    // Western Region
+    { name: 'Mbarara City', district: 'Mbarara', region: 'Western', distanceKm: 270, baseFee: 32000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Fort Portal City', district: 'Kabarole', region: 'Western', distanceKm: 300, baseFee: 35000, perKgFee: 1000, estimatedDays: 3 },
+    { name: 'Kasese Town', district: 'Kasese', region: 'Western', distanceKm: 380, baseFee: 38000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Kabale Town', district: 'Kabale', region: 'Western', distanceKm: 420, baseFee: 40000, perKgFee: 1100, estimatedDays: 4 },
+    { name: 'Bushenyi-Ishaka', district: 'Bushenyi', region: 'Western', distanceKm: 310, baseFee: 35000, perKgFee: 1000, estimatedDays: 3 },
+    { name: 'Hoima City', district: 'Hoima', region: 'Western', distanceKm: 200, baseFee: 28000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Masindi Town', district: 'Masindi', region: 'Western', distanceKm: 215, baseFee: 29000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Kibale Town', district: 'Kibale', region: 'Western', distanceKm: 230, baseFee: 30000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Ntungamo Town', district: 'Ntungamo', region: 'Western', distanceKm: 370, baseFee: 37000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Rukungiri Town', district: 'Rukungiri', region: 'Western', distanceKm: 380, baseFee: 38000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Kisoro Town', district: 'Kisoro', region: 'Western', distanceKm: 480, baseFee: 45000, perKgFee: 1200, estimatedDays: 5 },
+    { name: 'Mubende Town', district: 'Mubende', region: 'Western', distanceKm: 150, baseFee: 25000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Kyenjojo Town', district: 'Kyenjojo', region: 'Western', distanceKm: 260, baseFee: 32000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Ibanda Town', district: 'Ibanda', region: 'Western', distanceKm: 290, baseFee: 33000, perKgFee: 1000, estimatedDays: 3 },
+    // Northern Region
+    { name: 'Gulu City', district: 'Gulu', region: 'Northern', distanceKm: 340, baseFee: 35000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Lira City', district: 'Lira', region: 'Northern', distanceKm: 340, baseFee: 35000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Arua City', district: 'Arua', region: 'Northern', distanceKm: 480, baseFee: 45000, perKgFee: 1200, estimatedDays: 5 },
+    { name: 'Kitgum Town', district: 'Kitgum', region: 'Northern', distanceKm: 420, baseFee: 42000, perKgFee: 1100, estimatedDays: 5 },
+    { name: 'Pader Town', district: 'Pader', region: 'Northern', distanceKm: 380, baseFee: 38000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Moyo Town', district: 'Moyo', region: 'Northern', distanceKm: 490, baseFee: 45000, perKgFee: 1200, estimatedDays: 5 },
+    { name: 'Nebbi Town', district: 'Nebbi', region: 'Northern', distanceKm: 450, baseFee: 43000, perKgFee: 1100, estimatedDays: 5 },
+    { name: 'Apac Town', district: 'Apac', region: 'Northern', distanceKm: 280, baseFee: 33000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Adjumani Town', district: 'Adjumani', region: 'Northern', distanceKm: 460, baseFee: 44000, perKgFee: 1200, estimatedDays: 5 },
+    { name: 'Moroto Town', district: 'Moroto', region: 'Northern', distanceKm: 480, baseFee: 48000, perKgFee: 1300, estimatedDays: 5 },
+    { name: 'Kotido Town', district: 'Kotido', region: 'Northern', distanceKm: 500, baseFee: 50000, perKgFee: 1300, estimatedDays: 5 },
+  ];
+
+  for (const zone of shippingZones) {
+    await prisma.shippingZone.upsert({
+      where: { name: zone.name },
+      update: {},
+      create: {
+        ...zone,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`Seeded ${shippingZones.length} shipping zones`);
+
   console.log('========================================');
   console.log('Database seed completed successfully!');
   console.log('========================================');

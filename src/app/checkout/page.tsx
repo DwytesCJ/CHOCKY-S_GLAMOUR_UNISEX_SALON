@@ -1,13 +1,29 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 
+interface ShippingZone {
+  id: string;
+  name: string;
+  district: string;
+  region: string;
+  distanceKm: number;
+  baseFee: number;
+  perKgFee: number;
+  estimatedDays: number;
+  isActive: boolean;
+}
+
 export default function CheckoutPage() {
   const { items, totalPrice, totalItems, clearCart } = useCart();
   const [step, setStep] = useState(1);
+  const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState('');
+  const [zoneSearch, setZoneSearch] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
   const [formData, setFormData] = useState({
     // Contact
     email: '',
@@ -20,7 +36,7 @@ export default function CheckoutPage() {
     district: '',
     notes: '',
     // Delivery
-    deliveryMethod: 'standard',
+    deliveryMethod: 'delivery',
     // Payment
     paymentMethod: 'mobile_money',
     mobileProvider: 'mtn',
@@ -28,23 +44,66 @@ export default function CheckoutPage() {
   });
   const [orderComplete, setOrderComplete] = useState(false);
 
-  const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
+  useEffect(() => {
+    fetch('/api/shipping/zones')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.zones) setShippingZones(data.data.zones);
+      })
+      .catch(() => {});
+  }, []);
 
-  const shipping = formData.deliveryMethod === 'express' ? 20000 : 
-                   formData.deliveryMethod === 'pickup' ? 0 : 10000;
+  const selectedZone = shippingZones.find(z => z.id === selectedZoneId);
+  const shipping = formData.deliveryMethod === 'pickup' ? 0 : (selectedZone?.baseFee || 0);
   const grandTotal = totalPrice + shipping;
+
+  const groupedZones = useMemo(() => {
+    const filtered = shippingZones.filter(z =>
+      z.name.toLowerCase().includes(zoneSearch.toLowerCase()) ||
+      z.district.toLowerCase().includes(zoneSearch.toLowerCase())
+    );
+    return filtered.reduce((acc, zone) => {
+      if (!acc[zone.region]) acc[zone.region] = [];
+      acc[zone.region].push(zone);
+      return acc;
+    }, {} as Record<string, ShippingZone[]>);
+  }, [shippingZones, zoneSearch]);
+
+  const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (step === 2 && formData.deliveryMethod === 'delivery' && !selectedZoneId) {
+      return; // Don't proceed without selecting a shipping zone
+    }
     if (step < 3) {
       setStep(step + 1);
     } else {
       // Process order
+      try {
+        const orderData = {
+          items: items.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price, variant: item.variant })),
+          shippingAddress: { firstName: formData.firstName, lastName: formData.lastName, address: formData.address, city: formData.city, district: formData.district },
+          contactInfo: { email: formData.email, phone: formData.phone },
+          deliveryMethod: formData.deliveryMethod,
+          shippingZoneId: formData.deliveryMethod === 'delivery' ? selectedZoneId : null,
+          shippingCost: shipping,
+          subtotal: totalPrice,
+          total: grandTotal,
+          paymentMethod: formData.paymentMethod,
+          notes: formData.notes,
+        };
+        const res = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
+        const result = await res.json();
+        setOrderNumber(result.orderNumber || `CHK-${Date.now().toString().slice(-8)}`);
+      } catch {
+        setOrderNumber(`CHK-${Date.now().toString().slice(-8)}`);
+      }
       setOrderComplete(true);
       clearCart();
     }
@@ -80,7 +139,7 @@ export default function CheckoutPage() {
             <h1 className="font-heading text-3xl font-bold mb-4">Order Confirmed!</h1>
             <p className="text-gray-600 mb-2">Thank you for your order.</p>
             <p className="text-gray-600 mb-8">
-              Order #CHK-{Date.now().toString().slice(-8)} has been placed successfully.
+              Order #{orderNumber} has been placed successfully.
               We&apos;ve sent a confirmation to your email and phone.
             </p>
             <div className="bg-white rounded-xl p-6 shadow-soft mb-8 text-left">
@@ -279,46 +338,122 @@ export default function CheckoutPage() {
               {step === 2 && (
                 <div className="bg-white rounded-xl p-6 shadow-soft">
                   <h2 className="font-heading text-xl font-semibold mb-6">Delivery Method</h2>
-                  <div className="space-y-4">
+                  
+                  {/* Delivery vs Pickup Toggle */}
+                  <div className="flex gap-4 mb-6">
                     {[
-                      { id: 'standard', name: 'Standard Delivery', price: 10000, time: '3-5 business days' },
-                      { id: 'express', name: 'Express Delivery', price: 20000, time: '1-2 business days' },
-                      { id: 'pickup', name: 'Store Pickup', price: 0, time: 'Ready in 24 hours' },
+                      { id: 'delivery', name: 'Delivery', icon: 'fa-truck', desc: 'Ship to your location' },
+                      { id: 'pickup', name: 'Store Pickup', icon: 'fa-store', desc: 'FREE - Pick up at our store' },
                     ].map((method) => (
                       <label
                         key={method.id}
-                        className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                        className={`flex-1 flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
                           formData.deliveryMethod === method.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="flex items-center gap-4">
-                          <input
-                            type="radio"
-                            name="deliveryMethod"
-                            value={method.id}
-                            checked={formData.deliveryMethod === method.id}
-                            onChange={handleInputChange}
-                            className="w-4 h-4 accent-primary"
-                          />
-                          <div>
-                            <p className="font-medium">{method.name}</p>
-                            <p className="text-sm text-gray-500">{method.time}</p>
-                          </div>
+                        <input
+                          type="radio"
+                          name="deliveryMethod"
+                          value={method.id}
+                          checked={formData.deliveryMethod === method.id}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 accent-primary"
+                        />
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <i className={`fas ${method.icon} text-gray-600`}></i>
                         </div>
-                        <span className="font-semibold">
-                          {method.price === 0 ? 'FREE' : formatPrice(method.price)}
-                        </span>
+                        <div>
+                          <p className="font-medium">{method.name}</p>
+                          <p className="text-xs text-gray-500">{method.desc}</p>
+                        </div>
                       </label>
                     ))}
                   </div>
 
+                  {/* Shipping Zone Selection */}
+                  {formData.deliveryMethod === 'delivery' && (
+                    <div>
+                      <h3 className="font-medium mb-3">Select Destination Town Center</h3>
+                      <div className="relative mb-4">
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                          type="text"
+                          value={zoneSearch}
+                          onChange={e => setZoneSearch(e.target.value)}
+                          placeholder="Search town or district..."
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      
+                      <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100">
+                        {Object.keys(groupedZones).length === 0 ? (
+                          <div className="p-4 text-center text-gray-500 text-sm">
+                            {shippingZones.length === 0 ? 'Loading shipping zones...' : 'No towns found matching your search'}
+                          </div>
+                        ) : (
+                          Object.entries(groupedZones).sort(([a], [b]) => a.localeCompare(b)).map(([region, zones]) => (
+                            <div key={region}>
+                              <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0">
+                                {region} Region
+                              </div>
+                              {zones.map(zone => (
+                                <label
+                                  key={zone.id}
+                                  className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
+                                    selectedZoneId === zone.id ? 'bg-primary/5' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="radio"
+                                      name="shippingZone"
+                                      value={zone.id}
+                                      checked={selectedZoneId === zone.id}
+                                      onChange={() => setSelectedZoneId(zone.id)}
+                                      className="w-4 h-4 accent-primary"
+                                    />
+                                    <div>
+                                      <p className="text-sm font-medium">{zone.name}</p>
+                                      <p className="text-xs text-gray-500">{zone.district} &middot; ~{zone.distanceKm}km &middot; {zone.estimatedDays}</p>
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-semibold text-primary">{formatPrice(zone.baseFee)}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {selectedZone && (
+                        <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <i className="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                            <div className="text-sm">
+                              <p className="font-medium text-blue-800">Delivery to {selectedZone.name}</p>
+                              <p className="text-blue-600">Estimated: {selectedZone.estimatedDays} &middot; Shipping: {formatPrice(selectedZone.baseFee)}</p>
+                              <p className="text-blue-500 mt-1">Our admin will confirm the exact drop-off point with the delivery service.</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.deliveryMethod === 'delivery' && !selectedZoneId && (
+                        <p className="mt-3 text-sm text-amber-600"><i className="fas fa-exclamation-triangle mr-1"></i> Please select a destination to continue</p>
+                      )}
+                    </div>
+                  )}
+
                   {formData.deliveryMethod === 'pickup' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                    <div className="p-4 bg-gray-50 rounded-xl">
                       <h3 className="font-medium mb-2">Pickup Location</h3>
                       <p className="text-sm text-gray-600">
                         CHOCKY&apos;S Ultimate Glamour<br />
-                        Kampala Road, Kampala<br />
+                        Wandegeya, Kampala<br />
                         Open: Mon-Sat 9AM-7PM, Sun 10AM-5PM
+                      </p>
+                      <p className="text-sm text-green-600 mt-2 font-medium">
+                        <i className="fas fa-check-circle mr-1"></i> FREE - No shipping charges
                       </p>
                     </div>
                   )}

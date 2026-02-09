@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions, isStaff } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { sendOrderStatusUpdate } from '@/lib/email';
+import { createOrderNotification } from '@/lib/notifications';
 
 // GET /api/admin/orders/[id] - Get order details
 export async function GET(
@@ -188,6 +190,36 @@ export async function PUT(
     });
     
     // TODO: Send notification email to customer
+    const statusMessages: Record<string, string> = {
+      CONFIRMED: 'Your order has been confirmed and is being prepared.',
+      PROCESSING: 'Your order is now being processed and packed.',
+      SHIPPED: `Your order has been shipped!${trackingNumber ? ` Tracking number: ${trackingNumber}` : ''}`,
+      OUT_FOR_DELIVERY: 'Your order is out for delivery! It will arrive soon.',
+      DELIVERED: 'Your order has been delivered. Enjoy your products!',
+      CANCELLED: `Your order has been cancelled.${notes ? ` Reason: ${notes}` : ''}`,
+    };
+
+    // Send email notification
+    if (status && (order as any).user?.email) {
+      sendOrderStatusUpdate({
+        email: (order as any).user.email,
+        customerName: (order as any).user.firstName || 'Customer',
+        orderNumber: order.orderNumber,
+        status,
+        statusMessage: statusMessages[status] || `Your order status has been updated to ${status}.`,
+        trackingNumber: trackingNumber || undefined,
+      }).catch(err => console.error('Failed to send status email:', err));
+    }
+
+    // Create user notification
+    if (order.userId && status) {
+      await createOrderNotification(
+        order.userId,
+        order.orderNumber,
+        status,
+        order.id
+      );
+    }
     
     return NextResponse.json({
       success: true,

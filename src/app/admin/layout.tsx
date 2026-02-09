@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
+import NotificationPanel from '@/components/admin/NotificationPanel';
 
 const menuItems = [
   { name: 'Dashboard', href: '/admin', icon: 'fa-tachometer-alt' },
@@ -34,6 +35,7 @@ export default function AdminLayout({
   const [notificationCount, setNotificationCount] = useState<number>(0);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [notificationError, setNotificationError] = useState<string | null>(null);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -197,14 +199,23 @@ export default function AdminLayout({
           {/* Right side */}
           <div className="flex items-center gap-4">
             {/* Notifications */}
-            <button className="relative text-gray-600 hover:text-gray-900">
-              <i className="fas fa-bell text-xl"></i>
-              {!notificationsLoading && notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </span>
-              )}
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
+                className="relative text-gray-600 hover:text-gray-900"
+              >
+                <i className="fas fa-bell text-xl"></i>
+                {!notificationsLoading && notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                  </span>
+                )}
+              </button>
+              <NotificationPanel
+                isOpen={notificationPanelOpen}
+                onClose={() => setNotificationPanelOpen(false)}
+              />
+            </div>
 
             {/* User menu */}
             <div className="flex items-center gap-3">

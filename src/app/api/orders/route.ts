@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { createOrderNotification } from '@/lib/notifications';
+import { sendOrderConfirmation } from '@/lib/email';
 
 // Generate unique order number
 function generateOrderNumber(): string {
@@ -272,9 +274,50 @@ export async function POST(request: NextRequest) {
       },
     });
     
+    // Create notification for user
+    if (session?.user?.id) {
+      await createOrderNotification(
+        session.user.id,
+        order.orderNumber,
+        'PENDING',
+        order.id
+      );
+    }
+
+    // Send order confirmation email
+    if (body.contactInfo?.email || session?.user?.email) {
+      const email = body.contactInfo?.email || session?.user?.email;
+      const customerName = body.shippingAddress 
+        ? `${body.shippingAddress.firstName || ''} ${body.shippingAddress.lastName || ''}`.trim()
+        : session?.user?.name || 'Customer';
+      
+      sendOrderConfirmation({
+        orderNumber: order.orderNumber,
+        customerName,
+        email,
+        items: orderItems.map((item: any) => ({
+          name: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          variant: item.variantName,
+        })),
+        subtotal,
+        shippingCost: shippingCost || 0,
+        total,
+        shippingAddress: body.shippingAddress 
+          ? `${body.shippingAddress.address || ''}, ${body.shippingAddress.city || ''}, ${body.shippingAddress.district || ''}` 
+          : 'Store Pickup',
+        estimatedDelivery: body.deliveryMethod === 'pickup' ? 'Ready in 24 hours' : '2-5 business days',
+        paymentMethod: paymentMethod || 'Mobile Money',
+      }).then(() => {
+        prisma.order.update({ where: { id: order.id }, data: { emailSent: true } }).catch(() => {});
+      }).catch(err => console.error('Email send error:', err));
+    }
+    
     return NextResponse.json({
       success: true,
       data: order,
+      orderNumber: order.orderNumber,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating order:', error);

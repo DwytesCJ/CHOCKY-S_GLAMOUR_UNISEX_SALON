@@ -42,6 +42,27 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [id]);
 
+  // Save to recently viewed in localStorage
+  useEffect(() => {
+    if (!product) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+      const entry = {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        originalPrice: product.compareAtPrice ? Number(product.compareAtPrice) : undefined,
+        image: product.images?.[0]?.url || '/images/placeholder.jpg',
+        category: product.category?.name || 'Beauty',
+        rating: product.averageRating || 0,
+        reviews: product.reviewCount || 0,
+      };
+      const filtered = stored.filter((p: any) => p.id !== product.id);
+      filtered.unshift(entry);
+      localStorage.setItem('recentlyViewed', JSON.stringify(filtered.slice(0, 10)));
+    } catch {}
+  }, [product]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream">
@@ -251,14 +272,24 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={product.stockQuantity <= 0}
-                className="flex-1 btn btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 btn btn-outline py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <i className="fas fa-shopping-bag mr-2"></i>
                 Add to Cart
               </button>
+              <Link
+                href={product.stockQuantity > 0 ? '/checkout' : '#'}
+                onClick={(e) => {
+                  if (product.stockQuantity <= 0) { e.preventDefault(); return; }
+                  handleAddToCart();
+                }}
+                className="flex-1 btn btn-primary py-4 text-lg text-center"
+              >
+                Buy Now
+              </Link>
               <button
                 onClick={handleWishlistToggle}
-                className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center transition-colors ${
+                className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                   inWishlist 
                     ? 'bg-primary border-primary text-white' 
                     : 'border-gray-200 hover:border-primary hover:text-primary'
@@ -266,6 +297,31 @@ export default function ProductDetailPage() {
               >
                 <i className={`${inWishlist ? 'fas' : 'far'} fa-heart text-xl`}></i>
               </button>
+            </div>
+
+            {/* Delivery Info */}
+            <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <i className="fas fa-truck text-primary mt-0.5"></i>
+                <div>
+                  <p className="font-medium text-sm">Delivery</p>
+                  <p className="text-xs text-gray-500">Estimated 2-5 business days &middot; Rates vary by location</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <i className="fas fa-store text-primary mt-0.5"></i>
+                <div>
+                  <p className="font-medium text-sm">Store Pickup</p>
+                  <p className="text-xs text-gray-500">Free pickup at Wandegeya, Kampala</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <i className="fas fa-undo text-primary mt-0.5"></i>
+                <div>
+                  <p className="font-medium text-sm">Returns</p>
+                  <p className="text-xs text-gray-500">Free 7-day returns on eligible items</p>
+                </div>
+              </div>
             </div>
 
             {/* Product Meta */}

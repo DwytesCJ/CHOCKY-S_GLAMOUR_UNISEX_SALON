@@ -95,9 +95,21 @@ export default function Header() {
     <>
       {/* Announcement Bar */}
       <div className="bg-gradient-to-r from-primary via-rose-gold to-burgundy text-white py-2 text-center text-xs sm:text-sm">
-        <div className="container mx-auto px-4 flex items-center justify-center gap-2">
-          <i className="fas fa-truck"></i>
-          <span>Free Delivery on Orders Over UGX 100,000 | <Link href="/shop" className="underline hover:no-underline">Shop Now</Link></span>
+        <div className="container mx-auto px-4 flex items-center justify-center gap-4">
+          <span className="flex items-center gap-2">
+            <i className="fas fa-truck"></i>
+            Free Delivery on Orders Over UGX 100,000
+          </span>
+          <span className="hidden sm:inline text-white/50">|</span>
+          <Link href="/track" className="hidden sm:flex items-center gap-1 underline hover:no-underline">
+            <i className="fas fa-map-marker-alt text-xs"></i>
+            Track Order
+          </Link>
+          <span className="hidden md:inline text-white/50">|</span>
+          <Link href="/salon" className="hidden md:flex items-center gap-1 underline hover:no-underline">
+            <i className="fas fa-calendar-check text-xs"></i>
+            Book Appointment
+          </Link>
         </div>
       </div>
 
@@ -168,6 +180,14 @@ export default function Header() {
                             </ul>
                           </div>
                         ))}
+                        <div className="col-span-4 mt-2 pt-4 border-t border-gray-100 flex items-center justify-between">
+                          <Link href="/shop" className="text-primary text-sm font-medium hover:underline">
+                            View All Products <i className="fas fa-arrow-right ml-1 text-xs"></i>
+                          </Link>
+                          <Link href="/shop?sale=true" className="text-sm text-rose-gold font-medium">
+                            <i className="fas fa-fire mr-1"></i> Hot Deals
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -309,6 +329,14 @@ export default function Header() {
               ))}
               <hr className="my-2" />
               <Link
+                href="/track"
+                className="py-3 px-4 hover:bg-gray-50 rounded-lg transition-colors font-medium flex items-center gap-3"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-map-marker-alt"></i>
+                Track Order
+              </Link>
+              <Link
                 href="/account"
                 className="py-3 px-4 hover:bg-gray-50 rounded-lg transition-colors font-medium flex items-center gap-3"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -345,9 +373,9 @@ export default function Header() {
                 </button>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-xs font-semibold text-gray-500 mb-3">Popular Searches</h4>
+                <h4 className="text-xs font-semibold text-gray-500 mb-3">POPULAR SEARCHES</h4>
                 <div className="flex flex-wrap gap-2">
-                  {['Lipstick', 'Foundation', 'Wigs', 'Perfume', 'Skincare'].map((term) => (
+                  {['Lipstick', 'Foundation', 'Wigs', 'Perfume', 'Skincare', 'Hair Extensions', 'Gift Sets'].map((term) => (
                     <Link
                       key={term}
                       href={`/shop?search=${term}`}

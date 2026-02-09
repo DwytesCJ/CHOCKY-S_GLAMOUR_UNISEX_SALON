@@ -79,12 +79,12 @@ In Vercel Dashboard → Project Settings → Environment Variables, add:
 
 | Variable | Description |
 |----------|-------------|
+| `RESEND_API_KEY` | Resend API key for transactional emails |
+| `RESEND_FROM_EMAIL` | Verified sender email (e.g. `orders@chockys.com`) |
+| `CRON_SECRET` | Secret for cron endpoint authentication |
 | `MTN_MOMO_API_KEY` | MTN Mobile Money API key |
 | `AIRTEL_MONEY_API_KEY` | Airtel Money API key |
 | `PAYPAL_CLIENT_ID` | PayPal client ID |
-| `SMTP_HOST` | Email SMTP host |
-| `SMTP_USER` | Email SMTP username |
-| `SMTP_PASSWORD` | Email SMTP password |
 
 ---
 
@@ -178,10 +178,13 @@ Make sure `prisma generate` runs before `next build`:
 ## Production Checklist
 
 - [ ] Database is set up and accessible
-- [ ] All environment variables are configured
+- [ ] All environment variables are configured (including `RESEND_API_KEY`)
 - [ ] Prisma schema is pushed to database
+- [ ] Shipping zones are seeded (`npm run db:seed`)
 - [ ] Admin user is created
 - [ ] Sample products are seeded (optional)
+- [ ] Resend sender domain is verified
+- [ ] Vercel cron jobs are configured (appointment reminders)
 - [ ] Custom domain is configured (optional)
 - [ ] SSL certificate is active
 
@@ -215,4 +218,4 @@ For issues with deployment:
 
 ---
 
-*Last Updated: February 2025*
+*Last Updated: June 2025*

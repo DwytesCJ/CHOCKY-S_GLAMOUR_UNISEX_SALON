@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ExportButton from '@/components/admin/ExportButton';
+import { exportConfigs } from '@/lib/export';
+import { formatDistanceToNow, differenceInHours, differenceInDays, isToday, isTomorrow, isThisWeek, isThisMonth, startOfDay } from 'date-fns';
 
 interface Appointment {
   id: string;
@@ -123,6 +126,32 @@ export default function AdminAppointments() {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const getTimeRemaining = (dateStr: string, startTime: string): { label: string; urgency: 'urgent' | 'soon' | 'upcoming' | 'later' | 'past' } => {
+    const aptDateTime = new Date(`${dateStr}T${startTime}`);
+    const now = new Date();
+    
+    if (aptDateTime < now) return { label: 'Past', urgency: 'past' };
+    
+    const hoursLeft = differenceInHours(aptDateTime, now);
+    const daysLeft = differenceInDays(startOfDay(aptDateTime), startOfDay(now));
+    
+    if (hoursLeft < 3) return { label: `In ${hoursLeft}h`, urgency: 'urgent' };
+    if (isToday(aptDateTime)) return { label: 'Today', urgency: 'urgent' };
+    if (isTomorrow(aptDateTime)) return { label: 'Tomorrow', urgency: 'soon' };
+    if (daysLeft <= 7) return { label: `In ${daysLeft} days`, urgency: 'upcoming' };
+    return { label: formatDistanceToNow(aptDateTime, { addSuffix: true }), urgency: 'later' };
+  };
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
+      case 'soon': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'upcoming': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'past': return 'bg-gray-100 text-gray-500 border-gray-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-200';
+    }
+  };
+
   const filteredAppointments = appointments.filter((apt) => {
     const matchesSearch =
       apt.appointmentNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,9 +172,16 @@ export default function AdminAppointments() {
       weekLater.setDate(weekLater.getDate() + 7);
       const aptDate = new Date(apt.date);
       matchesDate = aptDate >= today && aptDate <= weekLater;
+    } else if (dateFilter === 'month') {
+      matchesDate = isThisMonth(new Date(apt.date));
     }
     
     return matchesSearch && matchesStatus && matchesDate;
+  }).sort((a, b) => {
+    // Sort by date soonest first, then by time
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.startTime.localeCompare(b.startTime);
   });
 
   // Calculate stats
@@ -177,6 +213,18 @@ export default function AdminAppointments() {
           <p className="text-gray-600">Manage salon service bookings</p>
         </div>
         <div className="flex gap-3">
+          <ExportButton
+            data={appointments}
+            columns={exportConfigs.appointments.columns}
+            filename="chockys-appointments"
+            title="Appointments Report"
+            summary={[
+              { label: 'Total Appointments', value: String(stats.total) },
+              { label: 'Pending', value: String(stats.pending) },
+              { label: 'Confirmed', value: String(stats.confirmed) },
+              { label: 'Today', value: String(stats.today) },
+            ]}
+          />
           {/* View Toggle */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
@@ -281,6 +329,7 @@ export default function AdminAppointments() {
                   <option value="today">Today</option>
                   <option value="tomorrow">Tomorrow</option>
                   <option value="week">This Week</option>
+                  <option value="month">This Month</option>
                 </select>
               </div>
             </div>
@@ -352,6 +401,15 @@ export default function AdminAppointments() {
                         <div>
                           <p className="font-medium text-gray-900">{formatDate(apt.date)}</p>
                           <p className="text-sm text-gray-500">{apt.startTime} - {apt.endTime}</p>
+                          {(() => {
+                            const tr = getTimeRemaining(apt.date, apt.startTime);
+                            return (
+                              <span className={`inline-flex items-center mt-1 px-2 py-0.5 text-xs font-medium rounded-full border ${getUrgencyColor(tr.urgency)}`}>
+                                {tr.urgency === 'urgent' && <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1 animate-pulse"></span>}
+                                {tr.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-4">

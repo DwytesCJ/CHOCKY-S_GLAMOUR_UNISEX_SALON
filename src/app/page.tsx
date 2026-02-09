@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ProductCard from '@/components/products/ProductCard';
@@ -65,11 +65,37 @@ const testimonials = [
   { id: 3, name: 'Diana Opio', role: 'Regular Client', image: '/images/testimonials/pexels-enginakyurt-3065209.jpg', text: 'I love the variety of products available. Everything is authentic and reasonably priced.', rating: 5 },
 ];
 
+// Flash deal countdown timer hook
+function useCountdown() {
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      const diff = end.getTime() - now.getTime();
+      if (diff <= 0) { setTimeLeft({ hours: 0, minutes: 0, seconds: 0 }); return; }
+      setTimeLeft({
+        hours: Math.floor(diff / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      });
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return timeLeft;
+}
+
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [dynamicProducts, setFeaturedProducts] = useState<any[]>([]);
   const [dynamicCategories, setCategories] = useState<any[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const countdown = useCountdown();
 
   // Fetch featured products and categories
   useEffect(() => {
@@ -97,6 +123,14 @@ export default function HomePage() {
     }
 
     fetchData();
+  }, []);
+
+  // Load recently viewed products from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('recentlyViewed');
+      if (stored) setRecentlyViewed(JSON.parse(stored).slice(0, 4));
+    } catch {}
   }, []);
 
   // Auto-rotate hero slides
@@ -260,6 +294,43 @@ export default function HomePage() {
                   <p className="text-xs sm:text-sm text-white/80">{category.count} Products</p>
                 </div>
               </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Flash Deals Section */}
+      <section className="py-10 sm:py-14 bg-gradient-to-r from-rose-50 to-pink-50">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                <i className="fas fa-bolt text-white"></i>
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-gray-900">Flash Deals</h2>
+                <p className="text-sm text-gray-500">Hurry up! Deals end today</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-3 sm:mt-0">
+              <span className="text-sm text-gray-600 font-medium">Ends in:</span>
+              {[{ val: countdown.hours, label: 'Hrs' }, { val: countdown.minutes, label: 'Min' }, { val: countdown.seconds, label: 'Sec' }].map((t, i) => (
+                <React.Fragment key={i}>
+                  <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-center min-w-[48px]">
+                    <span className="text-lg font-bold">{String(t.val).padStart(2, '0')}</span>
+                    <span className="block text-[10px] uppercase tracking-wider text-gray-300">{t.label}</span>
+                  </div>
+                  {i < 2 && <span className="text-gray-900 font-bold text-lg">:</span>}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            {displayProducts.filter(p => p.originalPrice).slice(0, 4).map((product) => (
+              <ProductCard key={`flash-${product.id}`} product={product as any} />
+            ))}
+            {displayProducts.filter(p => p.originalPrice).length === 0 && displayProducts.slice(0, 4).map((product) => (
+              <ProductCard key={`flash-${product.id}`} product={product as any} />
             ))}
           </div>
         </div>
@@ -440,6 +511,28 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Recently Viewed Products */}
+      {recentlyViewed.length > 0 && (
+        <section className="py-10 sm:py-14">
+          <div className="container mx-auto px-4">
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Your History</span>
+                <h2 className="text-xl sm:text-2xl font-heading font-bold mt-1">Recently Viewed</h2>
+              </div>
+              <Link href="/shop" className="text-primary text-sm font-semibold hover:underline">
+                View All <i className="fas fa-arrow-right ml-1"></i>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {recentlyViewed.map((product: any) => (
+                <ProductCard key={`recent-${product.id}`} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Instagram Feed */}
       <section className="py-12 sm:py-16 bg-cream">

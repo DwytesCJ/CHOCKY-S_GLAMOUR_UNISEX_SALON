@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ExportButton from '@/components/admin/ExportButton';
+import { exportConfigs } from '@/lib/export';
 
 interface Service {
   id: string;
@@ -95,15 +97,28 @@ export default function AdminServices() {
           <h1 className="text-2xl font-bold text-gray-900">Services</h1>
           <p className="text-gray-600">Manage salon services</p>
         </div>
-        <Link
-          href="/admin/services/new"
-          className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Service
-        </Link>
+        <div className="flex gap-3">
+          <ExportButton
+            data={services}
+            columns={exportConfigs.services.columns}
+            filename="chockys-services"
+            title="Services Report"
+            summary={[
+              { label: 'Total Services', value: String(services.length) },
+              { label: 'Active', value: String(services.filter(s => s.isActive).length) },
+              { label: 'Categories', value: String(categories.length) },
+            ]}
+          />
+          <Link
+            href="/admin/services/new"
+            className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Service
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

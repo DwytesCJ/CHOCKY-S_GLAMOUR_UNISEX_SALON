@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import ExportButton from '@/components/admin/ExportButton';
+import { exportConfigs } from '@/lib/export';
 
 interface Product {
   id: string;
@@ -136,12 +138,17 @@ export default function AdminProducts() {
           <p className="text-gray-600">Manage your product catalog</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            Export
-          </button>
+          <ExportButton
+            data={products}
+            columns={exportConfigs.products.columns}
+            filename={`chockys-products-${new Date().toISOString().split('T')[0]}`}
+            title="Products Report"
+            summary={[
+              { label: 'Total Products', value: String(stats.total) },
+              { label: 'Active', value: String(stats.active) },
+              { label: 'Total Inventory Value', value: `UGX ${stats.totalValue.toLocaleString()}` },
+            ]}
+          />
           <Link
             href="/admin/products/new"
             className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"

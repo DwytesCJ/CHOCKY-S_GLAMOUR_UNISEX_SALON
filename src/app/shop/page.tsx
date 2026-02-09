@@ -39,6 +39,7 @@ export default function ShopPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Fetch categories
   useEffect(() => {
@@ -276,7 +277,25 @@ export default function ShopPage() {
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="rating">Top Rated</option>
+                  <option value="popular">Most Popular</option>
                 </select>
+                {/* View Toggle */}
+                <div className="hidden sm:flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow text-primary' : 'text-gray-400'}`}
+                    title="Grid view"
+                  >
+                    <i className="fas fa-th text-sm"></i>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow text-primary' : 'text-gray-400'}`}
+                    title="List view"
+                  >
+                    <i className="fas fa-list text-sm"></i>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -319,15 +338,34 @@ export default function ShopPage() {
               </div>
             )}
 
+            {/* Active Filters */}
+            {(selectedCategory !== 'All' || selectedPriceRange !== null) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {selectedCategory !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm">
+                    {selectedCategory}
+                    <button onClick={() => handleCategoryChange('All')} className="ml-1 hover:text-primary/70"><i className="fas fa-times text-xs"></i></button>
+                  </span>
+                )}
+                {selectedPriceRange !== null && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm">
+                    {priceRanges[selectedPriceRange].label}
+                    <button onClick={() => handlePriceRangeChange(null)} className="ml-1 hover:text-primary/70"><i className="fas fa-times text-xs"></i></button>
+                  </span>
+                )}
+                <button onClick={handleClearFilters} className="text-sm text-gray-500 hover:text-primary underline">Clear all</button>
+              </div>
+            )}
+
             {/* Products Grid */}
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              <div className={`grid ${viewMode === 'list' ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4'} gap-4 md:gap-6`}>
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="bg-white rounded-2xl aspect-[3/4] animate-pulse"></div>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              <div className={`grid ${viewMode === 'list' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4'} gap-4 md:gap-6`}>
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

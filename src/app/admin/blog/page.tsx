@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ExportButton from '@/components/admin/ExportButton';
+import { exportConfigs } from '@/lib/export';
 
 interface BlogPost {
   id: string;
@@ -98,15 +100,29 @@ export default function AdminBlog() {
           <h1 className="text-2xl font-bold text-gray-900">Blog Posts</h1>
           <p className="text-gray-600">Manage your blog content</p>
         </div>
-        <Link
-          href="/admin/blog/new"
-          className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Post
-        </Link>
+        <div className="flex gap-3">
+          <ExportButton
+            data={posts}
+            columns={exportConfigs.blog.columns}
+            filename="chockys-blog-posts"
+            title="Blog Posts Report"
+            summary={[
+              { label: 'Total Posts', value: String(posts.length) },
+              { label: 'Published', value: String(posts.filter(p => p.isPublished).length) },
+              { label: 'Drafts', value: String(posts.filter(p => !p.isPublished).length) },
+              { label: 'Total Views', value: posts.reduce((sum, p) => sum + p.views, 0).toLocaleString() },
+            ]}
+          />
+          <Link
+            href="/admin/blog/new"
+            className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Post
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
