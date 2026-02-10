@@ -28,16 +28,10 @@ export async function GET() {
     const products = allProductIds.length > 0
       ? await prisma.product.findMany({
           where: { id: { in: [...new Set(allProductIds)] }, isActive: true },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            price: true,
-            compareAtPrice: true,
-            images: { take: 1, select: { url: true } },
-            category: { select: { name: true } },
-            averageRating: true,
-            reviewCount: true,
+          include: {
+            images: { take: 1 },
+            category: true,
+            reviews: { select: { rating: true } },
           },
         })
       : [];
@@ -50,17 +44,22 @@ export async function GET() {
       const promoProducts = ids
         .map(id => productMap.get(id))
         .filter(Boolean)
-        .map(p => ({
-          id: p!.id,
-          name: p!.name,
-          slug: p!.slug,
-          price: Number(p!.price),
-          originalPrice: p!.compareAtPrice ? Number(p!.compareAtPrice) : undefined,
-          image: p!.images[0]?.url || '/images/placeholder.jpg',
-          category: p!.category?.name || 'Beauty',
-          rating: p!.averageRating || 0,
-          reviews: p!.reviewCount || 0,
-        }));
+        .map(p => {
+          const avgRating = p!.reviews.length > 0
+            ? Math.round(p!.reviews.reduce((sum, r) => sum + r.rating, 0) / p!.reviews.length * 10) / 10
+            : 0;
+          return {
+            id: p!.id,
+            name: p!.name,
+            slug: p!.slug,
+            price: Number(p!.price),
+            originalPrice: p!.compareAtPrice ? Number(p!.compareAtPrice) : undefined,
+            image: p!.images[0]?.url || '/images/placeholder.jpg',
+            category: p!.category?.name || 'Beauty',
+            rating: avgRating,
+            reviews: p!.reviews.length,
+          };
+        });
 
       return {
         id: promo.id,
