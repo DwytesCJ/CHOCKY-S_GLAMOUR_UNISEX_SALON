@@ -32,7 +32,7 @@ export default function AdminCategories() {
             slug: cat.slug,
             description: cat.description || '',
             isActive: cat.isActive ?? true,
-            productCount: cat.products?.length || 0,
+            productCount: cat._count?.products || 0,
             createdAt: cat.createdAt
           }));
           setCategories(transformedCategories);
