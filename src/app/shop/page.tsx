@@ -40,6 +40,17 @@ export default function ShopPage() {
   const [selectedPriceRange, setSelectedPriceRange] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch categories
   useEffect(() => {
@@ -68,6 +79,10 @@ export default function ShopPage() {
       setIsLoading(true);
       try {
         let url = `/api/products?page=${currentPage}&limit=${PRODUCTS_PER_PAGE}`;
+        
+        if (debouncedSearch) {
+          url += `&search=${encodeURIComponent(debouncedSearch)}`;
+        }
         
         if (selectedCategory !== 'All') {
           const category = categories.find(c => c.name === selectedCategory);
@@ -118,7 +133,7 @@ export default function ShopPage() {
     if (categories.length > 0 || selectedCategory === 'All') {
       fetchProducts();
     }
-  }, [currentPage, selectedCategory, selectedPriceRange, sortBy, categories]);
+  }, [currentPage, selectedCategory, selectedPriceRange, sortBy, categories, debouncedSearch]);
 
   const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
 
@@ -253,16 +268,31 @@ export default function ShopPage() {
           <div className="flex-1">
             {/* Toolbar */}
             <div className="bg-white rounded-xl p-4 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg"
+                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg flex-shrink-0"
                 >
                   <i className="fas fa-filter"></i>
                   Filters
                 </button>
-                <p className="text-gray-600">
-                  Showing <strong>{products.length}</strong> of <strong>{totalProducts}</strong> products
+                <div className="relative flex-1 max-w-md">
+                  <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      <i className="fas fa-times text-xs"></i>
+                    </button>
+                  )}
+                </div>
+                <p className="text-gray-600 text-sm hidden sm:block flex-shrink-0">
+                  <strong>{totalProducts}</strong> products
                 </p>
               </div>
               <div className="flex items-center gap-3">

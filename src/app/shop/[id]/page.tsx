@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useToast } from '@/context/ToastContext';
 import ProductCard from '@/components/products/ProductCard';
 
 export default function ProductDetailPage() {
@@ -13,6 +14,7 @@ export default function ProductDetailPage() {
   const id = params?.id as string;
   const { addItem } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
+  const toast = useToast();
   
   const [product, setProduct] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
@@ -92,11 +94,13 @@ export default function ProductDetailPage() {
       quantity: quantity,
       variant: product.variants?.[selectedVariant]?.name,
     });
+    toast.success(`${product.name} added to cart`);
   };
 
   const handleWishlistToggle = () => {
     if (inWishlist) {
       removeFromWishlist(product.id);
+      toast.info('Removed from wishlist');
     } else {
       addToWishlist({
         id: product.id,
@@ -105,6 +109,7 @@ export default function ProductDetailPage() {
         image: product.images[0]?.url || '/images/placeholders/product.jpg',
         category: product.category?.name || 'Uncategorized',
       });
+      toast.success('Added to wishlist');
     }
   };
 

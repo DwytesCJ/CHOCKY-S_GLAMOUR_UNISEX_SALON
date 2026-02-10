@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 
 const footerLinks = {
@@ -41,6 +43,37 @@ const socialLinks = [
 ];
 
 export default function Footer() {
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [newsletterMsg, setNewsletterMsg] = useState('');
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+    setNewsletterStatus('loading');
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newsletterEmail }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewsletterStatus('success');
+        setNewsletterMsg(data.message);
+        setNewsletterEmail('');
+        setTimeout(() => setNewsletterStatus('idle'), 5000);
+      } else {
+        setNewsletterStatus('error');
+        setNewsletterMsg(data.error || 'Failed to subscribe');
+        setTimeout(() => setNewsletterStatus('idle'), 4000);
+      }
+    } catch {
+      setNewsletterStatus('error');
+      setNewsletterMsg('Something went wrong. Please try again.');
+      setTimeout(() => setNewsletterStatus('idle'), 4000);
+    }
+  };
   return (
     <footer className="bg-gray-900 text-white">
       {/* Newsletter Section */}
@@ -55,19 +88,30 @@ export default function Footer() {
                 Subscribe for exclusive offers, beauty tips, and 10% off your first order!
               </p>
             </div>
-            <form className="flex w-full md:w-auto gap-2">
+            <form onSubmit={handleNewsletterSubmit} className="flex w-full md:w-auto gap-2">
               <input
                 type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email"
                 className="flex-1 md:w-80 px-6 py-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60 focus:outline-none focus:bg-white/30 transition-colors"
+                required
+                disabled={newsletterStatus === 'loading'}
               />
               <button
                 type="submit"
-                className="px-8 py-3 bg-white text-primary font-semibold rounded-full hover:bg-gray-100 transition-colors"
+                disabled={newsletterStatus === 'loading'}
+                className="px-8 py-3 bg-white text-primary font-semibold rounded-full hover:bg-gray-100 transition-colors disabled:opacity-70"
               >
-                Subscribe
+                {newsletterStatus === 'loading' ? 'Subscribing...' : 'Subscribe'}
               </button>
             </form>
+            {newsletterStatus === 'success' && (
+              <p className="text-sm text-green-200 mt-2 text-center md:text-right"><i className="fas fa-check-circle mr-1"></i>{newsletterMsg}</p>
+            )}
+            {newsletterStatus === 'error' && (
+              <p className="text-sm text-red-200 mt-2 text-center md:text-right"><i className="fas fa-exclamation-circle mr-1"></i>{newsletterMsg}</p>
+            )}
           </div>
         </div>
       </div>
@@ -165,24 +209,24 @@ export default function Footer() {
                 <li className="flex items-start gap-3">
                   <i className="fas fa-map-marker-alt text-primary mt-1"></i>
                   <span className="text-gray-400">
-                    Kampala Road, Kampala<br />Uganda
+                    Annex Building, Wandegeya,<br />Kampala, Uganda
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fas fa-phone text-primary"></i>
-                  <a href="tel:+256700123456" className="text-gray-400 hover:text-primary transition-colors">
-                    +256 700 123 456
+                  <a href="tel:+256703878485" className="text-gray-400 hover:text-primary transition-colors">
+                    +256 703 878 485
                   </a>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fas fa-envelope text-primary"></i>
-                  <a href="mailto:info@chockys.ug" className="text-gray-400 hover:text-primary transition-colors">
-                    info@chockys.ug
+                  <a href="mailto:josephchandin@gmail.com" className="text-gray-400 hover:text-primary transition-colors">
+                    josephchandin@gmail.com
                   </a>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fab fa-whatsapp text-primary"></i>
-                  <a href="https://wa.me/256700123456" className="text-gray-400 hover:text-primary transition-colors">
+                  <a href="https://wa.me/256703878485" className="text-gray-400 hover:text-primary transition-colors">
                     WhatsApp Us
                   </a>
                 </li>
@@ -230,7 +274,7 @@ export default function Footer() {
 
       {/* WhatsApp Floating Button */}
       <a
-        href="https://wa.me/256700123456"
+        href="https://wa.me/256703878485"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all z-50"

@@ -12,16 +12,33 @@ export default function ContactPage() {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    setSubmitted(true);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to send message');
+      setSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,7 +67,7 @@ export default function ContactPage() {
                 <h3 className="font-heading text-lg font-semibold mb-2">Visit Our Store</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   CHOCKY&apos;S Ultimate Glamour<br />
-                  Kampala Road, Plot 123<br />
+                  Annex Building, Wandegeya<br />
                   Kampala, Uganda
                 </p>
                 <a 
@@ -73,8 +90,8 @@ export default function ContactPage() {
                   Mon - Sat: 9:00 AM - 7:00 PM<br />
                   Sunday: 10:00 AM - 5:00 PM
                 </p>
-                <a href="tel:+256700123456" className="text-primary font-medium hover:underline">
-                  +256 700 123 456
+                <a href="tel:+256703878485" className="text-primary font-medium hover:underline">
+                  +256 703 878 485
                 </a>
               </div>
 
@@ -87,8 +104,8 @@ export default function ContactPage() {
                 <p className="text-gray-600 text-sm mb-2">
                   We&apos;ll respond within 24 hours
                 </p>
-                <a href="mailto:hello@chockys.ug" className="text-primary font-medium hover:underline">
-                  hello@chockys.ug
+                <a href="mailto:josephchandin@gmail.com" className="text-primary font-medium hover:underline">
+                  josephchandin@gmail.com
                 </a>
               </div>
 
@@ -102,7 +119,7 @@ export default function ContactPage() {
                   Quick responses via WhatsApp
                 </p>
                 <a 
-                  href="https://wa.me/256700123456" 
+                  href="https://wa.me/256703878485" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
@@ -226,9 +243,17 @@ export default function ContactPage() {
                           required
                         ></textarea>
                       </div>
-                      <button type="submit" className="btn btn-primary px-8">
-                        Send Message
-                        <i className="fas fa-paper-plane ml-2"></i>
+                      {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                          {error}
+                        </div>
+                      )}
+                      <button type="submit" disabled={loading} className="btn btn-primary px-8 disabled:opacity-60">
+                        {loading ? (
+                          <><i className="fas fa-spinner fa-spin mr-2"></i>Sending...</>
+                        ) : (
+                          <>Send Message<i className="fas fa-paper-plane ml-2"></i></>
+                        )}
                       </button>
                     </form>
                   </>
@@ -252,7 +277,7 @@ export default function ContactPage() {
               <div className="text-center">
                 <i className="fas fa-map-marked-alt text-4xl text-gray-400 mb-4"></i>
                 <p className="text-gray-500">Interactive Map</p>
-                <p className="text-sm text-gray-400">Kampala Road, Plot 123, Kampala</p>
+                <p className="text-sm text-gray-400">Annex Building, Wandegeya, Kampala</p>
               </div>
             </div>
           </div>

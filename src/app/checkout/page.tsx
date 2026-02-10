@@ -43,6 +43,12 @@ export default function CheckoutPage() {
     mobileNumber: '',
   });
   const [orderComplete, setOrderComplete] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useEffect(() => {
     fetch('/api/shipping/zones')
@@ -55,7 +61,7 @@ export default function CheckoutPage() {
 
   const selectedZone = shippingZones.find(z => z.id === selectedZoneId);
   const shipping = formData.deliveryMethod === 'pickup' ? 0 : (selectedZone?.baseFee || 0);
-  const grandTotal = totalPrice + shipping;
+  const grandTotal = totalPrice + shipping - couponDiscount;
 
   const groupedZones = useMemo(() => {
     const filtered = shippingZones.filter(z =>
@@ -71,6 +77,39 @@ export default function CheckoutPage() {
 
   const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode, orderTotal: totalPrice }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCouponDiscount(data.data.discount);
+        setCouponApplied(data.data.code);
+      } else {
+        setCouponError(data.error || 'Invalid coupon');
+        setCouponDiscount(0);
+        setCouponApplied('');
+      }
+    } catch {
+      setCouponError('Failed to validate coupon');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode('');
+    setCouponDiscount(0);
+    setCouponApplied('');
+    setCouponError('');
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -85,6 +124,7 @@ export default function CheckoutPage() {
       setStep(step + 1);
     } else {
       // Process order
+      setIsPlacingOrder(true);
       try {
         const orderData = {
           items: items.map(item => ({ productId: item.id, quantity: item.quantity, price: item.price, variant: item.variant })),
@@ -103,6 +143,8 @@ export default function CheckoutPage() {
         setOrderNumber(result.orderNumber || `CHK-${Date.now().toString().slice(-8)}`);
       } catch {
         setOrderNumber(`CHK-${Date.now().toString().slice(-8)}`);
+      } finally {
+        setIsPlacingOrder(false);
       }
       setOrderComplete(true);
       clearCart();
@@ -311,11 +353,18 @@ export default function CheckoutPage() {
                           required
                         >
                           <option value="">Select district</option>
-                          <option value="kampala">Kampala</option>
-                          <option value="wakiso">Wakiso</option>
-                          <option value="mukono">Mukono</option>
-                          <option value="jinja">Jinja</option>
-                          <option value="entebbe">Entebbe</option>
+                          {[...new Set(shippingZones.map(z => z.district))].sort().map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                          {shippingZones.length === 0 && (
+                            <>
+                              <option value="Kampala">Kampala</option>
+                              <option value="Wakiso">Wakiso</option>
+                              <option value="Mukono">Mukono</option>
+                              <option value="Jinja">Jinja</option>
+                              <option value="Entebbe">Entebbe</option>
+                            </>
+                          )}
                         </select>
                       </div>
                     </div>
@@ -562,9 +611,9 @@ export default function CheckoutPage() {
                     Back to Cart
                   </Link>
                 )}
-                <button type="submit" className="btn btn-primary">
-                  {step === 3 ? 'Place Order' : 'Continue'}
-                  <i className="fas fa-arrow-right ml-2"></i>
+                <button type="submit" className="btn btn-primary" disabled={isPlacingOrder}>
+                  {step === 3 ? (isPlacingOrder ? (<><i className="fas fa-spinner fa-spin mr-2"></i>Placing Order...</>) : 'Place Order') : 'Continue'}
+                  {step < 3 && <i className="fas fa-arrow-right ml-2"></i>}
                 </button>
               </div>
             </form>
@@ -608,6 +657,47 @@ export default function CheckoutPage() {
                   <span className="text-gray-600">Shipping</span>
                   <span>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
                 </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Coupon ({couponApplied})</span>
+                    <span>-{formatPrice(couponDiscount)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Coupon Code */}
+              <div className="border-t border-gray-100 mt-4 pt-4">
+                {couponApplied ? (
+                  <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+                    <div>
+                      <span className="text-sm font-medium text-green-700"><i className="fas fa-check-circle mr-1"></i>{couponApplied}</span>
+                      <span className="text-sm text-green-600 ml-2">-{formatPrice(couponDiscount)}</span>
+                    </div>
+                    <button onClick={removeCoupon} className="text-red-400 hover:text-red-600 text-sm">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                        placeholder="Coupon code"
+                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50"
+                      >
+                        {couponLoading ? <i className="fas fa-spinner fa-spin"></i> : 'Apply'}
+                      </button>
+                    </div>
+                    {couponError && <p className="text-red-500 text-xs mt-1">{couponError}</p>}
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-gray-100 mt-4 pt-4">

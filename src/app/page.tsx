@@ -66,14 +66,12 @@ const testimonials = [
 ];
 
 // Flash deal countdown timer hook
-function useCountdown() {
+function useCountdown(targetDate: Date | null) {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   useEffect(() => {
+    const target = targetDate || (() => { const d = new Date(); d.setHours(23, 59, 59, 999); return d; })();
     const tick = () => {
-      const now = new Date();
-      const end = new Date();
-      end.setHours(23, 59, 59, 999);
-      const diff = end.getTime() - now.getTime();
+      const diff = target.getTime() - Date.now();
       if (diff <= 0) { setTimeLeft({ hours: 0, minutes: 0, seconds: 0 }); return; }
       setTimeLeft({
         hours: Math.floor(diff / (1000 * 60 * 60)),
@@ -84,7 +82,7 @@ function useCountdown() {
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [targetDate]);
   return timeLeft;
 }
 
@@ -93,27 +91,36 @@ export default function HomePage() {
   const [dynamicProducts, setFeaturedProducts] = useState<any[]>([]);
   const [dynamicCategories, setCategories] = useState<any[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
+  const [flashDeals, setFlashDeals] = useState<any[]>([]);
+  const [flashDealEnd, setFlashDealEnd] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const countdown = useCountdown();
+  const countdown = useCountdown(flashDealEnd);
 
-  // Fetch featured products and categories
+  // Fetch featured products, categories, and active promotions
   useEffect(() => {
     async function fetchData() {
       try {
-        const [productsRes, categoriesRes] = await Promise.all([
+        const [productsRes, categoriesRes, promosRes] = await Promise.all([
           fetch('/api/products?featured=true&limit=8'),
-          fetch('/api/categories?parentOnly=true')
+          fetch('/api/categories?parentOnly=true'),
+          fetch('/api/promotions/active'),
         ]);
 
         const productsData = await productsRes.json();
         const categoriesData = await categoriesRes.json();
+        const promosData = await promosRes.json();
 
         if (productsData.success) {
           setFeaturedProducts(productsData.data);
         }
         if (categoriesData.success) {
           setCategories(categoriesData.data);
+        }
+        if (promosData.success && promosData.data?.length > 0) {
+          const activePromo = promosData.data[0];
+          setFlashDeals(activePromo.products || []);
+          setFlashDealEnd(new Date(activePromo.endDate));
         }
       } catch (error) {
         console.error('Error fetching homepage data:', error);
@@ -300,6 +307,7 @@ export default function HomePage() {
       </section>
 
       {/* Flash Deals Section */}
+      {(flashDeals.length > 0 || displayProducts.filter(p => p.originalPrice).length > 0) && (
       <section className="py-10 sm:py-14 bg-gradient-to-r from-rose-50 to-pink-50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
@@ -309,7 +317,7 @@ export default function HomePage() {
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-gray-900">Flash Deals</h2>
-                <p className="text-sm text-gray-500">Hurry up! Deals end today</p>
+                <p className="text-sm text-gray-500">{flashDealEnd ? 'Limited time offer!' : 'Hurry up! Deals end today'}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 mt-3 sm:mt-0">
@@ -326,15 +334,19 @@ export default function HomePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {displayProducts.filter(p => p.originalPrice).slice(0, 4).map((product) => (
-              <ProductCard key={`flash-${product.id}`} product={product as any} />
-            ))}
-            {displayProducts.filter(p => p.originalPrice).length === 0 && displayProducts.slice(0, 4).map((product) => (
-              <ProductCard key={`flash-${product.id}`} product={product as any} />
-            ))}
+            {flashDeals.length > 0 ? (
+              flashDeals.slice(0, 4).map((product: any) => (
+                <ProductCard key={`flash-${product.id}`} product={product as any} />
+              ))
+            ) : (
+              displayProducts.filter(p => p.originalPrice).slice(0, 4).map((product) => (
+                <ProductCard key={`flash-${product.id}`} product={product as any} />
+              ))
+            )}
           </div>
         </div>
       </section>
+      )}
 
       {/* Featured Products Section */}
       <section className="py-12 sm:py-16">

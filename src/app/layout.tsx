@@ -3,10 +3,12 @@ import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { Providers } from "@/components/Providers";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
+import BackToTop from "@/components/layout/BackToTop";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -21,7 +23,10 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "CHOCKY'S Ultimate Glamour | Premium Beauty & Salon Services",
+  title: {
+    default: "CHOCKY'S Ultimate Glamour | Premium Beauty & Salon Services",
+    template: "%s | CHOCKY'S Ultimate Glamour",
+  },
   description: "Your premier destination for luxury beauty products and professional salon services in Uganda. Shop makeup, skincare, hair products, perfumes, jewelry, and bags.",
   keywords: "beauty products Uganda, salon services Kampala, makeup, skincare, wigs, perfumes, jewelry, bags, CHOCKY'S",
   authors: [{ name: "CHOCKY'S Ultimate Glamour" }],
@@ -53,6 +58,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-white text-dark-900">
         <Providers>
+          <ToastProvider>
           <CartProvider>
             <WishlistProvider>
               <div className="min-h-screen flex flex-col">
@@ -62,9 +68,11 @@ export default function RootLayout({
                 </main>
                 <Footer />
                 <CartDrawer />
+                <BackToTop />
               </div>
             </WishlistProvider>
           </CartProvider>
+          </ToastProvider>
         </Providers>
       </body>
     </html>

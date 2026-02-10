@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -61,6 +63,12 @@ export default function Header() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   
   const { data: session, status } = useSession();
   const { totalItems: cartItems, toggleCart } = useCart();
@@ -86,6 +94,52 @@ export default function Header() {
     window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(searchQuery.trim())}&limit=6`);
+        const data = await res.json();
+        if (data.success) {
+          setSearchResults(data.data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            image: p.images?.[0]?.url || '/images/placeholder.jpg',
+            category: p.category?.name || 'Beauty',
+          })));
+        }
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [searchQuery]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setIsSearchOpen(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSearchResultClick = () => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
 
   // Determine text colors based on scroll state
   const textColor = isScrolled ? 'text-gray-800' : 'lg:text-white text-gray-800';
@@ -353,40 +407,90 @@ export default function Header() {
       {isSearchOpen && (
         <div 
           className="fixed inset-0 z-[100] bg-black/50 animate-fade-in"
-          onClick={() => setIsSearchOpen(false)}
+          onClick={() => { setIsSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
         >
           <div className="container mx-auto px-4 pt-20 sm:pt-32" onClick={e => e.stopPropagation()}>
             <div className="bg-white rounded-xl p-4 sm:p-6 max-w-2xl mx-auto shadow-xl">
-              <div className="flex items-center gap-3">
+              <form onSubmit={handleSearchSubmit} className="flex items-center gap-3">
                 <i className="fas fa-search text-gray-400 text-lg"></i>
                 <input
+                  ref={searchInputRef}
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for products..."
                   className="flex-1 text-base sm:text-lg outline-none"
                   autoFocus
                 />
+                {searchLoading && (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary"></div>
+                )}
                 <button
-                  onClick={() => setIsSearchOpen(false)}
+                  type="button"
+                  onClick={() => { setIsSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
                   <i className="fas fa-times text-lg"></i>
                 </button>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-xs font-semibold text-gray-500 mb-3">POPULAR SEARCHES</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['Lipstick', 'Foundation', 'Wigs', 'Perfume', 'Skincare', 'Hair Extensions', 'Gift Sets'].map((term) => (
-                    <Link
-                      key={term}
-                      href={`/shop?search=${term}`}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-primary hover:text-white rounded-full text-sm transition-colors"
-                      onClick={() => setIsSearchOpen(false)}
-                    >
-                      {term}
-                    </Link>
-                  ))}
+              </form>
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <h4 className="text-xs font-semibold text-gray-500 mb-3">RESULTS</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {searchResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/shop/${product.id}`}
+                        onClick={handleSearchResultClick}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <Image src={product.image} alt={product.name} fill className="object-cover" sizes="48px" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                          <p className="text-xs text-gray-500">{product.category}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-primary flex-shrink-0">UGX {product.price.toLocaleString()}</span>
+                      </Link>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleSearchSubmit}
+                    className="mt-3 w-full text-center text-sm text-primary font-medium hover:underline py-2"
+                  >
+                    View all results for &ldquo;{searchQuery}&rdquo;
+                  </button>
                 </div>
-              </div>
+              )}
+
+              {/* No results */}
+              {searchQuery.trim() && !searchLoading && searchResults.length === 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 text-center py-4">
+                  <i className="fas fa-search text-2xl text-gray-300 mb-2"></i>
+                  <p className="text-sm text-gray-500">No products found for &ldquo;{searchQuery}&rdquo;</p>
+                </div>
+              )}
+
+              {/* Popular Searches - show when no query */}
+              {!searchQuery.trim() && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <h4 className="text-xs font-semibold text-gray-500 mb-3">POPULAR SEARCHES</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {['Lipstick', 'Foundation', 'Wigs', 'Perfume', 'Skincare', 'Hair Extensions', 'Gift Sets'].map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setSearchQuery(term)}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-primary hover:text-white rounded-full text-sm transition-colors"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

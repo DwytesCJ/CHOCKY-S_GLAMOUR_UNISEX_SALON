@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, memo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useToast } from '@/context/ToastContext';
 
 interface Product {
   id: string;
@@ -26,6 +27,7 @@ function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { addItem: addToCart } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
+  const toast = useToast();
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -38,6 +40,7 @@ function ProductCard({ product }: ProductCardProps) {
       image: product.image,
       quantity: 1,
     });
+    toast.success(`${product.name} added to cart`);
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
@@ -45,6 +48,7 @@ function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     if (inWishlist) {
       removeFromWishlist(product.id);
+      toast.info('Removed from wishlist');
     } else {
       addToWishlist({
         id: product.id,
@@ -53,6 +57,7 @@ function ProductCard({ product }: ProductCardProps) {
         image: product.image,
         category: product.category,
       });
+      toast.success('Added to wishlist');
     }
   };
 

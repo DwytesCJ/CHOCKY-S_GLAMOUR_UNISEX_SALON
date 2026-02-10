@@ -11,6 +11,8 @@ const faqCategories = [
   { id: 'salon', name: 'Salon Services', icon: 'fa-cut' },
   { id: 'rewards', name: 'Rewards Program', icon: 'fa-crown' },
   { id: 'account', name: 'Account', icon: 'fa-user' },
+  { id: 'privacy', name: 'Privacy Policy', icon: 'fa-shield-alt' },
+  { id: 'terms', name: 'Terms of Service', icon: 'fa-file-contract' },
 ];
 
 const faqs = [
@@ -171,6 +173,68 @@ const faqs = [
     question: 'How do I update my account information?',
     answer: 'Log into your account, go to "Settings" and you can update your personal information, email, phone number, and password. Changes are saved automatically.',
   },
+  // Privacy Policy
+  {
+    id: 26,
+    category: 'privacy',
+    question: 'What personal information do you collect?',
+    answer: 'We collect information you provide during registration (name, email, phone number), order details (shipping address, payment method), browsing behavior on our site, and salon appointment preferences. We only collect data necessary to provide our services.',
+  },
+  {
+    id: 27,
+    category: 'privacy',
+    question: 'How do you use my personal data?',
+    answer: 'Your data is used to process orders and deliveries, manage salon appointments, send order confirmations and shipping updates, improve our products and services, and send promotional offers (only with your consent). We never sell your personal data to third parties.',
+  },
+  {
+    id: 28,
+    category: 'privacy',
+    question: 'How do you protect my data?',
+    answer: 'We use industry-standard SSL encryption for all data transmissions. Payment information is processed through secure, PCI-compliant payment gateways. We never store full credit card numbers. Access to personal data is restricted to authorized personnel only.',
+  },
+  {
+    id: 29,
+    category: 'privacy',
+    question: 'Can I request deletion of my data?',
+    answer: 'Yes, you can request deletion of your account and personal data by contacting us at josephchandin@gmail.com. We will process your request within 30 days. Note that we may retain certain data required by law (e.g., transaction records) for up to 7 years.',
+  },
+  {
+    id: 30,
+    category: 'privacy',
+    question: 'Do you use cookies?',
+    answer: 'Yes, we use essential cookies to keep you logged in and remember your cart. We also use analytics cookies to understand how visitors use our site. You can manage cookie preferences in your browser settings. Our site functions without non-essential cookies.',
+  },
+  // Terms of Service
+  {
+    id: 31,
+    category: 'terms',
+    question: 'What are the general terms for using this website?',
+    answer: 'By using CHOCKY\'S Ultimate Glamour website, you agree to be at least 18 years old (or have parental consent), provide accurate registration information, not misuse the platform, and comply with Ugandan laws. We reserve the right to suspend accounts that violate these terms.',
+  },
+  {
+    id: 32,
+    category: 'terms',
+    question: 'What is your pricing and payment policy?',
+    answer: 'All prices are listed in Ugandan Shillings (UGX) and include applicable taxes. Prices may change without notice, but orders placed before a price change will be honored. Payment must be completed before order dispatch. We accept Mobile Money, Visa/Mastercard, and Cash on Delivery (Kampala only).',
+  },
+  {
+    id: 33,
+    category: 'terms',
+    question: 'What is your intellectual property policy?',
+    answer: 'All content on this website, including logos, images, product descriptions, and design elements, is the property of CHOCKY\'S Ultimate Glamour Unisex Salon. You may not reproduce, distribute, or use our content without written permission. Product images are for illustration and actual products may vary slightly.',
+  },
+  {
+    id: 34,
+    category: 'terms',
+    question: 'What are the terms for salon services?',
+    answer: 'Salon appointments require punctual arrival; late arrivals may result in shortened service time. Cancellations must be made 24 hours in advance. No-shows may be charged up to 50% of the service cost. We reserve the right to refuse service if the requested style could damage your hair or skin health.',
+  },
+  {
+    id: 35,
+    category: 'terms',
+    question: 'How are disputes resolved?',
+    answer: 'We aim to resolve all disputes amicably. If you have a complaint, contact us at josephchandin@gmail.com or +256 703 878 485. If a resolution cannot be reached, disputes will be governed by the laws of Uganda and resolved through the appropriate courts in Kampala.',
+  },
 ];
 
 export default function FAQPage() {
@@ -307,7 +371,7 @@ export default function FAQPage() {
             </p>
             <div className="grid sm:grid-cols-3 gap-6">
               <a
-                href="https://wa.me/256700123456"
+                href="https://wa.me/256703878485"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-6 bg-cream rounded-xl hover:shadow-md transition-shadow"
@@ -319,24 +383,24 @@ export default function FAQPage() {
                 <p className="text-sm text-gray-500">Quick responses</p>
               </a>
               <a
-                href="mailto:support@chockys.ug"
+                href="mailto:josephchandin@gmail.com"
                 className="p-6 bg-cream rounded-xl hover:shadow-md transition-shadow"
               >
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <i className="fas fa-envelope text-primary text-xl"></i>
                 </div>
                 <h3 className="font-semibold mb-1">Email Us</h3>
-                <p className="text-sm text-gray-500">support@chockys.ug</p>
+                <p className="text-sm text-gray-500">josephchandin@gmail.com</p>
               </a>
               <a
-                href="tel:+256700123456"
+                href="tel:+256703878485"
                 className="p-6 bg-cream rounded-xl hover:shadow-md transition-shadow"
               >
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <i className="fas fa-phone-alt text-primary text-xl"></i>
                 </div>
                 <h3 className="font-semibold mb-1">Call Us</h3>
-                <p className="text-sm text-gray-500">+256 700 123 456</p>
+                <p className="text-sm text-gray-500">+256 703 878 485</p>
               </a>
             </div>
           </div>

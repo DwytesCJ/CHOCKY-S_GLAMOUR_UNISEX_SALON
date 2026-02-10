@@ -18,6 +18,7 @@ const menuItems = [
   { name: 'Blog', href: '/admin/blog', icon: 'fa-newspaper' },
   { name: 'Reviews', href: '/admin/reviews', icon: 'fa-star' },
   { name: 'Coupons', href: '/admin/coupons', icon: 'fa-ticket-alt' },
+  { name: 'Promotions', href: '/admin/promotions', icon: 'fa-bullhorn' },
   { name: 'Reports', href: '/admin/reports', icon: 'fa-chart-bar' },
   { name: 'Settings', href: '/admin/settings', icon: 'fa-cog' },
 ];
