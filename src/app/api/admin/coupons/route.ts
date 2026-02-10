@@ -46,7 +46,8 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      coupons,
+      success: true,
+      data: coupons,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),

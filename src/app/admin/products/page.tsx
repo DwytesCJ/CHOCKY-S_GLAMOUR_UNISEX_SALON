@@ -49,7 +49,7 @@ export default function AdminProducts() {
             stockQuantity: product.stockQuantity || 0,
             isActive: product.isActive ?? true,
             isFeatured: product.isFeatured ?? false,
-            image: product.images?.[0]?.url || '/images/placeholder.jpg',
+            image: product.image || product.images?.[0]?.url || '/images/placeholder.jpg',
             createdAt: product.createdAt
           }));
           
@@ -69,6 +69,22 @@ export default function AdminProducts() {
 
     fetchProducts();
   }, []);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok || data.success) {
+        setProducts(prev => prev.filter(p => p.id !== id));
+      } else {
+        alert(data.error || 'Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('An error occurred while deleting the product');
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-UG', {
@@ -356,6 +372,7 @@ export default function AdminProducts() {
                         </svg>
                       </Link>
                       <button
+                        onClick={() => handleDelete(product.id, product.name)}
                         className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                         title="Delete Product"
                       >

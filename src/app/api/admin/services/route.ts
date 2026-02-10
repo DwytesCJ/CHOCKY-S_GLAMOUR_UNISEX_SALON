@@ -73,7 +73,8 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      services,
+      success: true,
+      data: services,
       categories,
       pagination: {
         currentPage: page,

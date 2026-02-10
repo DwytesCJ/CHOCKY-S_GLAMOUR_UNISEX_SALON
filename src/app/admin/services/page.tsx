@@ -55,6 +55,22 @@ export default function AdminServices() {
     fetchServices();
   }, []);
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setServices(prev => prev.filter(s => s.id !== id));
+      } else {
+        alert(data.error || 'Failed to delete service');
+      }
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      alert('An error occurred while deleting the service');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-UG', {
       style: 'currency',
@@ -226,6 +242,7 @@ export default function AdminServices() {
                   </svg>
                 </Link>
                 <button
+                  onClick={() => handleDelete(service.id, service.name)}
                   className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                   title="Delete Service"
                 >

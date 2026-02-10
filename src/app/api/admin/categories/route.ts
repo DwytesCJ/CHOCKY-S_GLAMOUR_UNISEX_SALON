@@ -66,7 +66,8 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      categories,
+      success: true,
+      data: categories,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),

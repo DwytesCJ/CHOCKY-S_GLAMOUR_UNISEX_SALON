@@ -85,7 +85,8 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      reviews,
+      success: true,
+      data: reviews,
       products,
       pagination: {
         currentPage: page,

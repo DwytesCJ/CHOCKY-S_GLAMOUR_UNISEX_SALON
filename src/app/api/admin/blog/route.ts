@@ -74,7 +74,8 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      posts,
+      success: true,
+      data: posts,
       categories,
       pagination: {
         currentPage: page,

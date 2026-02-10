@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions, isStaff } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 // Generate unique appointment number
@@ -26,7 +26,13 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const upcoming = searchParams.get('upcoming') === 'true';
     
-    const where: any = { userId: session.user.id };
+    const where: any = {};
+    
+    // Admin/staff see all appointments; regular users see only their own
+    const userRole = (session.user as any).role || '';
+    if (!isStaff(userRole)) {
+      where.userId = session.user.id;
+    }
     
     if (status) {
       where.status = status;
@@ -46,6 +52,15 @@ export async function GET(request: NextRequest) {
           },
         },
         stylist: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
       },
       orderBy: { date: upcoming ? 'asc' : 'desc' },
     });

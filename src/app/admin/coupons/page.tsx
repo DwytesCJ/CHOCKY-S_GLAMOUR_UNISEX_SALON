@@ -59,6 +59,22 @@ export default function AdminCoupons() {
     fetchCoupons();
   }, []);
 
+  const handleDelete = async (id: string, code: string) => {
+    if (!confirm(`Are you sure you want to delete coupon "${code}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/coupons/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setCoupons(prev => prev.filter(c => c.id !== id));
+      } else {
+        alert(data.error || 'Failed to delete coupon');
+      }
+    } catch (error) {
+      console.error('Error deleting coupon:', error);
+      alert('An error occurred while deleting the coupon');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-UG', {
       style: 'currency',
@@ -245,6 +261,7 @@ export default function AdminCoupons() {
                   </svg>
                 </Link>
                 <button
+                  onClick={() => handleDelete(coupon.id, coupon.code)}
                   className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                   title="Delete Coupon"
                 >

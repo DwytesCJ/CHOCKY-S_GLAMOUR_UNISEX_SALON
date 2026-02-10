@@ -63,6 +63,22 @@ export default function AdminBlog() {
     fetchPosts();
   }, []);
 
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setPosts(prev => prev.filter(p => p.id !== id));
+      } else {
+        alert(data.error || 'Failed to delete blog post');
+      }
+    } catch (error) {
+      console.error('Error deleting blog post:', error);
+      alert('An error occurred while deleting the blog post');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-UG', {
       year: 'numeric',
@@ -222,6 +238,7 @@ export default function AdminBlog() {
                   </svg>
                 </Link>
                 <button
+                  onClick={() => handleDelete(post.id, post.title)}
                   className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                   title="Delete Post"
                 >

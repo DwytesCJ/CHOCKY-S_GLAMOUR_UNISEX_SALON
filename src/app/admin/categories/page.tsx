@@ -50,6 +50,22 @@ export default function AdminCategories() {
     fetchCategories();
   }, []);
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setCategories(prev => prev.filter(c => c.id !== id));
+      } else {
+        alert(data.error || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('An error occurred while deleting the category');
+    }
+  };
+
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     category.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -169,6 +185,7 @@ export default function AdminCategories() {
                         </svg>
                       </Link>
                       <button
+                        onClick={() => handleDelete(category.id, category.name)}
                         className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                         title="Delete Category"
                       >
