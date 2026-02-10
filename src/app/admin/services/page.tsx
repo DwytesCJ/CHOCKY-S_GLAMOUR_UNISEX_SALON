@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import ExportButton from '@/components/admin/ExportButton';
 import { exportConfigs } from '@/lib/export';
@@ -16,11 +16,28 @@ interface Service {
   createdAt: string;
 }
 
+interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  _count: { services: number };
+}
+
 export default function AdminServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+  const [catLoading, setCatLoading] = useState(false);
+  const [editingCat, setEditingCat] = useState<ServiceCategory | null>(null);
+  const [catForm, setCatForm] = useState({ name: '', description: '', icon: '', sortOrder: 0, isActive: true });
+  const [catSaving, setCatSaving] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -71,6 +88,78 @@ export default function AdminServices() {
     }
   };
 
+  const fetchCategories = useCallback(async () => {
+    setCatLoading(true);
+    try {
+      const res = await fetch('/api/admin/service-categories');
+      const data = await res.json();
+      if (data.success) setServiceCategories(data.data);
+    } catch (error) {
+      console.error('Error fetching service categories:', error);
+    } finally {
+      setCatLoading(false);
+    }
+  }, []);
+
+  const handleOpenCategoryModal = () => {
+    setShowCategoryModal(true);
+    fetchCategories();
+  };
+
+  const handleEditCat = (cat: ServiceCategory) => {
+    setEditingCat(cat);
+    setCatForm({ name: cat.name, description: cat.description || '', icon: cat.icon || '', sortOrder: cat.sortOrder, isActive: cat.isActive });
+  };
+
+  const handleCancelEditCat = () => {
+    setEditingCat(null);
+    setCatForm({ name: '', description: '', icon: '', sortOrder: 0, isActive: true });
+  };
+
+  const handleSaveCat = async () => {
+    if (!catForm.name.trim()) return alert('Name is required');
+    setCatSaving(true);
+    try {
+      const url = editingCat
+        ? `/api/admin/service-categories/${editingCat.id}`
+        : '/api/admin/service-categories';
+      const method = editingCat ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(catForm),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        fetchCategories();
+        handleCancelEditCat();
+      } else {
+        alert(data.error || 'Failed to save category');
+      }
+    } catch (error) {
+      console.error('Error saving service category:', error);
+      alert('An error occurred');
+    } finally {
+      setCatSaving(false);
+    }
+  };
+
+  const handleDeleteCat = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/service-categories/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        fetchCategories();
+      } else {
+        alert(data.error || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Error deleting service category:', error);
+      alert('An error occurred');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-UG', {
       style: 'currency',
@@ -114,6 +203,15 @@ export default function AdminServices() {
           <p className="text-gray-600">Manage salon services</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleOpenCategoryModal}
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Manage Categories
+          </button>
           <ExportButton
             data={services}
             columns={exportConfigs.services.columns}
@@ -277,6 +375,135 @@ export default function AdminServices() {
             </svg>
             Add Your First Service
           </Link>
+        </div>
+      )}
+
+      {/* Service Categories Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">Service Categories</h2>
+              <button onClick={() => { setShowCategoryModal(false); handleCancelEditCat(); }} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* Add/Edit Form */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-gray-900 mb-3">{editingCat ? 'Edit Category' : 'Add New Category'}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Category name *"
+                    value={catForm.name}
+                    onChange={(e) => setCatForm(f => ({ ...f, name: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Icon (e.g. fas fa-cut)"
+                    value={catForm.icon}
+                    onChange={(e) => setCatForm(f => ({ ...f, icon: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Description (optional)"
+                    value={catForm.description}
+                    onChange={(e) => setCatForm(f => ({ ...f, description: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 md:col-span-2"
+                  />
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm text-gray-600">
+                      Sort Order:
+                      <input
+                        type="number"
+                        value={catForm.sortOrder}
+                        onChange={(e) => setCatForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))}
+                        className="ml-2 w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-pink-500"
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={catForm.isActive}
+                        onChange={(e) => setCatForm(f => ({ ...f, isActive: e.target.checked }))}
+                        className="rounded border-gray-300 text-pink-500 focus:ring-pink-500"
+                      />
+                      Active
+                    </label>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    {editingCat && (
+                      <button onClick={handleCancelEditCat} className="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSaveCat}
+                      disabled={catSaving}
+                      className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50 transition-colors"
+                    >
+                      {catSaving ? 'Saving...' : editingCat ? 'Update' : 'Add Category'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Categories List */}
+              {catLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500"></div>
+                </div>
+              ) : serviceCategories.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No service categories yet. Add one above.</p>
+              ) : (
+                <div className="space-y-2">
+                  {serviceCategories.map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+                      <div className="flex items-center gap-3">
+                        {cat.icon && <i className={`${cat.icon} text-pink-500`}></i>}
+                        <div>
+                          <p className="font-medium text-gray-900">{cat.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {cat._count.services} service{cat._count.services !== 1 ? 's' : ''}
+                            {cat.description && ` · ${cat.description}`}
+                          </p>
+                        </div>
+                        {!cat.isActive && (
+                          <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">Inactive</span>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEditCat(cat)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCat(cat.id, cat.name)}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

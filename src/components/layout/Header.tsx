@@ -66,6 +66,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(100000);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -84,6 +85,18 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
+
+  // Fetch free shipping threshold from settings
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.freeShippingThreshold) {
+          setFreeShippingThreshold(parseInt(data.data.freeShippingThreshold));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -152,7 +165,7 @@ export default function Header() {
         <div className="container mx-auto px-4 flex items-center justify-center gap-4">
           <span className="flex items-center gap-2">
             <i className="fas fa-truck"></i>
-            Free Delivery on Orders Over UGX 100,000
+            Free Delivery on Orders Over UGX {freeShippingThreshold.toLocaleString()}
           </span>
           <span className="hidden sm:inline text-white/50">|</span>
           <Link href="/track" className="hidden sm:flex items-center gap-1 underline hover:no-underline">

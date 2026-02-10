@@ -1,16 +1,28 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCart();
+  const [freeShipThreshold, setFreeShipThreshold] = useState(100000);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.freeShippingThreshold) {
+          setFreeShipThreshold(parseInt(data.data.freeShippingThreshold));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
 
-  const shipping = totalPrice > 100000 ? 0 : 10000;
+  const shipping = totalPrice > freeShipThreshold ? 0 : 10000;
   const grandTotal = totalPrice + shipping;
 
   if (items.length === 0) {
@@ -171,7 +183,7 @@ export default function CartPage() {
                 </div>
                 {shipping > 0 && (
                   <p className="text-xs text-gray-500">
-                    Add {formatPrice(100000 - totalPrice)} more for free shipping
+                    Add {formatPrice(freeShipThreshold - totalPrice)} more for free shipping
                   </p>
                 )}
               </div>

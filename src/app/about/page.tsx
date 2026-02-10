@@ -97,7 +97,7 @@ export default function AboutPage() {
                   className="object-cover"
                 />
               </div>
-              <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-primary/10 rounded-2xl -z-10"></div>
+                            <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-primary/10 rounded-2xl -z-10 hidden sm:block"></div>
             </div>
             <div>
               <span className="text-primary font-medium">WHO WE ARE</span>

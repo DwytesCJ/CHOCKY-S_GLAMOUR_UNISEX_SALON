@@ -56,7 +56,7 @@ export default function RootLayout({
           referrerPolicy="no-referrer"
         />
       </head>
-      <body className="font-body antialiased bg-white text-dark-900">
+      <body className="font-body antialiased bg-white text-dark-900 overflow-x-hidden">
         <Providers>
           <ToastProvider>
           <CartProvider>

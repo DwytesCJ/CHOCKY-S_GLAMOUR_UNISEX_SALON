@@ -44,7 +44,7 @@ export default function AdminSettings() {
   const [orderShippedEmail, setOrderShippedEmail] = useState(true);
   const [appointmentReminder, setAppointmentReminder] = useState(true);
 
-  // Fetch shipping zones
+  // Fetch shipping zones and site settings
   useEffect(() => {
     const fetchZones = async () => {
       try {
@@ -54,7 +54,22 @@ export default function AdminSettings() {
       } catch (e) { console.error(e); }
       finally { setZonesLoading(false); }
     };
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.success && data.data) {
+          if (data.data.freeShippingThreshold) setFreeShippingThreshold(parseInt(data.data.freeShippingThreshold));
+          if (data.data.storeName) setStoreName(data.data.storeName);
+          if (data.data.storeEmail) setStoreEmail(data.data.storeEmail);
+          if (data.data.storePhone) setStorePhone(data.data.storePhone);
+          if (data.data.storeAddress) setStoreAddress(data.data.storeAddress);
+          if (data.data.currency) setCurrency(data.data.currency);
+        }
+      } catch (e) { console.error(e); }
+    };
     fetchZones();
+    fetchSettings();
   }, []);
 
   const formatCurrency = (amount: number) =>
@@ -107,10 +122,34 @@ export default function AdminSettings() {
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            storeName,
+            storeEmail,
+            storePhone,
+            storeAddress,
+            currency,
+            freeShippingThreshold: String(freeShippingThreshold),
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert(data.error || 'Failed to save settings');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('An error occurred while saving');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs = [

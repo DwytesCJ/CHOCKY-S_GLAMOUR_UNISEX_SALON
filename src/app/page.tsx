@@ -444,7 +444,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="relative">
+            <div className="relative overflow-hidden">
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-xl">
                 <Image
                   src="/images/banners/pexels-artbovich-7750115.jpg"
@@ -456,7 +456,7 @@ export default function HomePage() {
                 />
               </div>
               {/* Floating Card */}
-              <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-white p-4 sm:p-6 rounded-xl shadow-xl max-w-[200px] sm:max-w-xs">
+              <div className="absolute -bottom-4 left-0 sm:-bottom-6 sm:-left-6 bg-white p-4 sm:p-6 rounded-xl shadow-xl max-w-[200px] sm:max-w-xs">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex -space-x-2">
                     {[1, 2, 3].map((i) => (

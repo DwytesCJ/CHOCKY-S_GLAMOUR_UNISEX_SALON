@@ -171,13 +171,13 @@ function ProductCard({ product }: ProductCardProps) {
           </div>
 
           {/* Price */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-lg font-bold text-black">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-lg font-bold text-black truncate">
               UGX {product.price.toLocaleString()}
             </span>
             {product.originalPrice && (
               <>
-                <span className="text-sm text-gray-400 line-through">
+                <span className="text-sm text-gray-400 line-through truncate">
                   UGX {product.originalPrice.toLocaleString()}
                 </span>
               </>
