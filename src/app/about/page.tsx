@@ -1,8 +1,12 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
-const values = [
+// Fallback values data
+const fallbackValues = [
   {
     icon: 'fa-heart',
     title: 'Passion for Beauty',
@@ -25,7 +29,8 @@ const values = [
   },
 ];
 
-const stats = [
+// Fallback stats data
+const fallbackStats = [
   { number: '10K+', label: 'Happy Customers' },
   { number: '500+', label: 'Products' },
   { number: '50+', label: 'Brands' },
@@ -36,41 +41,88 @@ const team = [
   {
     name: 'Christine Nakato',
     role: 'Founder & CEO',
-    image: '/images/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
+    image: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
     bio: 'With over 15 years in the beauty industry, Christine founded CHOCKY\'S to bring premium beauty to Uganda.',
   },
   {
     name: 'Grace Nakamya',
     role: 'Head Stylist',
-    image: '/images/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg',
+    image: '/uploads/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg',
     bio: 'Grace leads our salon team with expertise in hair styling, coloring, and wig installation.',
   },
   {
     name: 'Sarah Achieng',
     role: 'Lead Makeup Artist',
-    image: '/images/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg',
+    image: '/uploads/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg',
     bio: 'Sarah specializes in bridal and editorial makeup, bringing glamour to every client.',
   },
   {
     name: 'David Okello',
     role: 'Operations Manager',
-    image: '/images/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg',
+    image: '/uploads/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg',
     bio: 'David ensures smooth operations and exceptional customer service across all channels.',
   },
 ];
 
 export default function AboutPage() {
+  const { settings } = useSiteSettings();
+  const [values, setValues] = useState(fallbackValues);
+  const [stats, setStats] = useState(fallbackStats);
+
+  // Fetch dynamic values and stats from ContentBlock API
+  useEffect(() => {
+    async function fetchContentBlocks() {
+      try {
+        const [valuesRes, statsRes] = await Promise.all([
+          fetch('/api/content-blocks?page=about&section=values'),
+          fetch('/api/content-blocks?page=about&section=stats'),
+        ]);
+
+        const valuesData = await valuesRes.json();
+        const statsData = await statsRes.json();
+
+        if (valuesData.success && valuesData.data.length > 0) {
+          setValues(valuesData.data.map((block: any) => {
+            const meta = block.metadata ? JSON.parse(block.metadata) : {};
+            return {
+              icon: meta.icon || 'fa-star',
+              title: block.title || '',
+              description: block.content || '',
+            };
+          }));
+        }
+
+        if (statsData.success && statsData.data.length > 0) {
+          setStats(statsData.data.map((block: any) => {
+            const meta = block.metadata ? JSON.parse(block.metadata) : {};
+            return {
+              number: meta.number || block.title || '0',
+              label: block.content || '',
+            };
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching about page content blocks:', error);
+      }
+    }
+
+    fetchContentBlocks();
+  }, []);
+
+  const phoneDisplay = settings.storePhone.replace(/(\+256)(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4');
+
   return (
     <div className="min-h-screen bg-cream">
       {/* Hero Section */}
       <section className="relative h-[50vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="/images/banners/pexels-cottonbro-3993134.jpg"
+            src="/uploads/banners/pexels-cottonbro-3993134.jpg"
             alt="About CHOCKY'S"
             fill
             className="object-cover"
             priority
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-black/50"></div>
         </div>
@@ -91,10 +143,11 @@ export default function AboutPage() {
             <div className="relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden">
                 <Image
-                  src="/images/banners/pexels-artbovich-7750115.jpg"
+                  src="/uploads/banners/pexels-artbovich-7750115.jpg"
                   alt="CHOCKY'S Store"
                   fill
                   className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               </div>
                             <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-primary/10 rounded-2xl -z-10 hidden sm:block"></div>
@@ -184,6 +237,7 @@ export default function AboutPage() {
                     alt={member.name}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
                 </div>
                 <div className="p-6">
@@ -217,7 +271,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <h4 className="font-semibold">Address</h4>
-                    <p className="text-gray-600">Kampala Road, Kampala, Uganda</p>
+                    <p className="text-gray-600">{settings.storeAddress}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -226,8 +280,9 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <h4 className="font-semibold">Opening Hours</h4>
-                    <p className="text-gray-600">Mon - Sat: 9:00 AM - 7:00 PM</p>
-                    <p className="text-gray-600">Sunday: 10:00 AM - 5:00 PM</p>
+                    <p className="text-gray-600">{settings.openingHoursWeekday || 'Mon - Fri: 9:00 AM - 7:00 PM'}</p>
+                    <p className="text-gray-600">{settings.openingHoursSaturday || 'Saturday: 9:00 AM - 7:00 PM'}</p>
+                    <p className="text-gray-600">{settings.openingHoursSunday || 'Sunday: 10:00 AM - 5:00 PM'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -236,17 +291,32 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <h4 className="font-semibold">Contact</h4>
-                    <p className="text-gray-600">+256 700 123 456</p>
-                    <p className="text-gray-600">info@chockys.ug</p>
+                    <p className="text-gray-600">{phoneDisplay}</p>
+                    <p className="text-gray-600">{settings.storeEmail}</p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-200">
-              {/* Map placeholder */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <i className="fas fa-map-marked-alt text-6xl text-gray-400"></i>
-              </div>
+              {settings.googleMapsEmbed ? (
+                <iframe
+                  src={settings.googleMapsEmbed}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Store Location"
+                ></iframe>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <i className="fas fa-map-marked-alt text-6xl text-gray-400"></i>
+                    <p className="text-gray-500 mt-2">{settings.storeAddress}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

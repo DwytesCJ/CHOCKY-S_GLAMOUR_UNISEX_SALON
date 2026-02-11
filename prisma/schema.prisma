@@ -404,7 +404,7 @@ model ServiceCategory {
 
 model Stylist {
   id           String           @id @default(cuid())
-  name         String
+  name         String           @unique
   slug         String           @unique
   title        String
   bio          String?          @db.Text
@@ -668,7 +668,7 @@ model SiteSetting {
 
 model Banner {
   id          String    @id @default(cuid())
-  title       String
+  title       String    @unique
   subtitle    String?
   image       String
   mobileImage String?
@@ -688,7 +688,7 @@ model Banner {
 
 model Testimonial {
   id         String   @id @default(cuid())
-  name       String
+  name       String   @unique
   title      String?
   image      String?
   content    String   @db.Text
@@ -704,7 +704,7 @@ model Testimonial {
 
 model FAQ {
   id        String   @id @default(cuid())
-  question  String
+  question  String   @unique
   answer    String   @db.Text
   category  String   @default("general")
   sortOrder Int      @default(0)
@@ -914,3 +914,23 @@ model Promotion {
   @@index([isActive])
   @@index([startDate, endDate])
 }
+
+model ContentBlock {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  title     String?
+  content   String   @db.LongText
+  type      String   @default("text")
+  page      String   @default("home")
+  section   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([page])
+  @@index([isActive])
+}
+

@@ -186,7 +186,7 @@ export default function ShopPage() {
       <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white py-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
           <Image
-            src="/images/banners/pexels-cottonbro-3993134.jpg"
+            src="/uploads/banners/pexels-cottonbro-3993134.jpg"
             alt=""
             fill
             className="object-cover"

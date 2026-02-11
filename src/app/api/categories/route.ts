@@ -1,34 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+// GET /api/categories - Get all active categories with hierarchy
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const featured = searchParams.get('featured') === 'true';
-    const parentOnly = searchParams.get('parentOnly') === 'true';
-
-    const where: any = { isActive: true };
-    if (featured) where.isFeatured = true;
-    if (parentOnly) where.parentId = null;
-
+    // Fetch all active categories
     const categories = await prisma.category.findMany({
-      where,
-      include: {
-        _count: {
-          select: { products: true }
-        }
+      where: {
+        isActive: true,
       },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: {
+        sortOrder: 'asc',
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        image: true,
+        icon: true,
+        parentId: true,
+        sortOrder: true,
+      },
     });
+
+    // Organize into parent-child structure
+    const parentCategories = categories.filter(cat => !cat.parentId);
+    const childCategories = categories.filter(cat => cat.parentId);
+
+    // Build hierarchy
+    const categoriesWithChildren = parentCategories.map(parent => ({
+      ...parent,
+      children: childCategories.filter(child => child.parentId === parent.id),
+    }));
 
     return NextResponse.json({
       success: true,
-      data: categories,
+      data: categoriesWithChildren,
     });
   } catch (error) {
     console.error('Error fetching categories:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch categories' },
+      {
+        success: false,
+        error: 'Failed to fetch categories',
+      },
       { status: 500 }
     );
   }

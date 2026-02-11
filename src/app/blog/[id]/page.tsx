@@ -47,10 +47,10 @@ const blogPosts = [
       <h2>Conclusion</h2>
       <p>Beautiful skin is achievable with the right routine and products. Remember, consistency is key—stick to your routine for at least 4-6 weeks before expecting significant results. Visit our salon for a professional skin analysis and personalized product recommendations.</p>
     `,
-    image: '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
+    image: '/uploads/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
     category: 'skincare',
     author: 'Grace Nakamya',
-    authorImage: '/images/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
+    authorImage: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
     authorBio: 'Grace is a certified esthetician with over 8 years of experience in skincare. She specializes in treating hyperpigmentation and acne-prone skin.',
     date: 'January 28, 2024',
     readTime: '5 min read',
@@ -61,21 +61,21 @@ const relatedPosts = [
   {
     id: 2,
     title: 'DIY Face Masks Using Kitchen Ingredients',
-    image: '/images/products/skincare/pexels-karola-g-4889036.jpg',
+    image: '/uploads/products/skincare/pexels-828860-2587177.jpg',
     category: 'skincare',
     date: 'January 10, 2024',
   },
   {
     id: 3,
     title: 'Understanding Your Skin Type',
-    image: '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
+    image: '/uploads/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
     category: 'skincare',
     date: 'January 5, 2024',
   },
   {
     id: 4,
     title: 'The Best Serums for Every Skin Concern',
-    image: '/images/products/skincare/pexels-karola-g-4889036.jpg',
+    image: '/uploads/products/skincare/pexels-828860-2587177.jpg',
     category: 'skincare',
     date: 'December 28, 2023',
   },

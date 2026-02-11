@@ -2,8 +2,24 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 export default function ContactPage() {
+  const { settings } = useSiteSettings();
+
+  // Format contact info from settings
+  const whatsappNumber = settings.storeWhatsapp.replace(/[^0-9]/g, '');
+  const phoneDisplay = settings.storePhone.replace(/(\+256)(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4');
+
+  // Build social links from settings
+  const socialLinks = [
+    settings.facebookUrl && { icon: 'fa-facebook-f', color: 'bg-blue-600', href: settings.facebookUrl },
+    settings.instagramUrl && { icon: 'fa-instagram', color: 'bg-gradient-to-br from-purple-600 to-pink-500', href: settings.instagramUrl },
+    settings.twitterUrl && { icon: 'fa-twitter', color: 'bg-sky-500', href: settings.twitterUrl },
+    settings.tiktokUrl && { icon: 'fa-tiktok', color: 'bg-black', href: settings.tiktokUrl },
+    settings.youtubeUrl && { icon: 'fa-youtube', color: 'bg-red-600', href: settings.youtubeUrl },
+  ].filter(Boolean) as { icon: string; color: string; href: string }[];
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -66,12 +82,13 @@ export default function ContactPage() {
                 </div>
                 <h3 className="font-heading text-lg font-semibold mb-2">Visit Our Store</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  CHOCKY&apos;S Ultimate Glamour<br />
-                  Annex Building, Wandegeya<br />
-                  Kampala, Uganda
+                  {settings.storeName || "CHOCKY'S Ultimate Glamour"}<br />
+                  {settings.storeAddress.split(',').map((part, i) => (
+                    <span key={i}>{part.trim()}{i < settings.storeAddress.split(',').length - 1 && <br />}</span>
+                  ))}
                 </p>
                 <a 
-                  href="https://maps.google.com" 
+                  href={`https://maps.google.com/?q=${encodeURIComponent(settings.storeAddress)}`}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-primary text-sm mt-3 hover:underline"
@@ -87,11 +104,12 @@ export default function ContactPage() {
                 </div>
                 <h3 className="font-heading text-lg font-semibold mb-2">Call Us</h3>
                 <p className="text-gray-600 text-sm mb-2">
-                  Mon - Sat: 9:00 AM - 7:00 PM<br />
-                  Sunday: 10:00 AM - 5:00 PM
+                  {settings.openingHoursWeekday || 'Mon - Fri: 9:00 AM - 7:00 PM'}<br />
+                  {settings.openingHoursSaturday || 'Saturday: 9:00 AM - 7:00 PM'}<br />
+                  {settings.openingHoursSunday || 'Sunday: 10:00 AM - 5:00 PM'}
                 </p>
-                <a href="tel:+256703878485" className="text-primary font-medium hover:underline">
-                  +256 703 878 485
+                <a href={`tel:${settings.storePhone}`} className="text-primary font-medium hover:underline">
+                  {phoneDisplay}
                 </a>
               </div>
 
@@ -104,8 +122,8 @@ export default function ContactPage() {
                 <p className="text-gray-600 text-sm mb-2">
                   We&apos;ll respond within 24 hours
                 </p>
-                <a href="mailto:josephchandin@gmail.com" className="text-primary font-medium hover:underline">
-                  josephchandin@gmail.com
+                <a href={`mailto:${settings.storeEmail}`} className="text-primary font-medium hover:underline">
+                  {settings.storeEmail}
                 </a>
               </div>
 
@@ -119,7 +137,7 @@ export default function ContactPage() {
                   Quick responses via WhatsApp
                 </p>
                 <a 
-                  href="https://wa.me/256703878485" 
+                  href={`https://wa.me/${whatsappNumber}`}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
@@ -130,26 +148,24 @@ export default function ContactPage() {
               </div>
 
               {/* Social Media */}
-              <div className="bg-white rounded-xl p-6 shadow-soft">
-                <h3 className="font-heading text-lg font-semibold mb-4">Follow Us</h3>
-                <div className="flex gap-3">
-                  {[
-                    { icon: 'fa-facebook-f', color: 'bg-blue-600', href: '#' },
-                    { icon: 'fa-instagram', color: 'bg-gradient-to-br from-purple-600 to-pink-500', href: '#' },
-                    { icon: 'fa-twitter', color: 'bg-sky-500', href: '#' },
-                    { icon: 'fa-tiktok', color: 'bg-black', href: '#' },
-                    { icon: 'fa-youtube', color: 'bg-red-600', href: '#' },
-                  ].map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.href}
-                      className={`w-10 h-10 ${social.color} rounded-lg flex items-center justify-center text-white hover:opacity-90 transition-opacity`}
-                    >
-                      <i className={`fab ${social.icon}`}></i>
-                    </a>
-                  ))}
+              {socialLinks.length > 0 && (
+                <div className="bg-white rounded-xl p-6 shadow-soft">
+                  <h3 className="font-heading text-lg font-semibold mb-4">Follow Us</h3>
+                  <div className="flex gap-3">
+                    {socialLinks.map((social, index) => (
+                      <a
+                        key={index}
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-10 h-10 ${social.color} rounded-lg flex items-center justify-center text-white hover:opacity-90 transition-opacity`}
+                      >
+                        <i className={`fab ${social.icon}`}></i>
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Contact Form */}
@@ -272,14 +288,26 @@ export default function ContactPage() {
             <p className="text-gray-600">Visit our store in the heart of Kampala</p>
           </div>
           <div className="rounded-xl overflow-hidden shadow-soft h-96 bg-gray-200">
-            {/* Map placeholder - in production, use Google Maps or similar */}
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-              <div className="text-center">
-                <i className="fas fa-map-marked-alt text-4xl text-gray-400 mb-4"></i>
-                <p className="text-gray-500">Interactive Map</p>
-                <p className="text-sm text-gray-400">Annex Building, Wandegeya, Kampala</p>
+            {settings.googleMapsEmbed ? (
+              <iframe
+                src={settings.googleMapsEmbed}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Store Location"
+              ></iframe>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <i className="fas fa-map-marked-alt text-4xl text-gray-400 mb-4"></i>
+                  <p className="text-gray-500">Interactive Map</p>
+                  <p className="text-sm text-gray-400">{settings.storeAddress}</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>

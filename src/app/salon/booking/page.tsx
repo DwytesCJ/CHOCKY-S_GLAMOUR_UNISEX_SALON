@@ -19,10 +19,10 @@ const services = [
 ];
 
 const stylists = [
-  { id: 1, name: 'Grace Nakamya', specialty: 'Hair', image: '/images/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg' },
-  { id: 2, name: 'Sarah Achieng', specialty: 'Makeup', image: '/images/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg' },
-  { id: 3, name: 'Amina Hassan', specialty: 'Skin', image: '/images/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg' },
-  { id: 4, name: 'Joy Namubiru', specialty: 'Hair', image: '/images/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg' },
+  { id: 1, name: 'Grace Nakamya', specialty: 'Hair', image: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg' },
+  { id: 2, name: 'Sarah Achieng', specialty: 'Makeup', image: '/uploads/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg' },
+  { id: 3, name: 'Amina Hassan', specialty: 'Skin', image: '/uploads/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg' },
+  { id: 4, name: 'Joy Namubiru', specialty: 'Hair', image: '/uploads/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg' },
 ];
 
 const timeSlots = [

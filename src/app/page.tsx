@@ -4,65 +4,63 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ProductCard from '@/components/products/ProductCard';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
-// Hero Slides Data
-const heroSlides = [
+// Fallback Hero Slides Data (used when no banners from DB)
+const fallbackHeroSlides = [
   {
-    id: 1,
-    image: '/images/hero/pexels-cottonbro-3993117.jpg',
-    title: 'Discover Your',
-    highlight: 'Ultimate Glamour',
+    id: 'fallback-1',
+    image: '/uploads/hero/pexels-cottonbro-3993117.jpg',
+    title: 'Discover Your Ultimate Glamour',
     subtitle: 'Premium beauty products and professional salon services tailored for you',
-    cta: 'Shop Now',
-    ctaLink: '/shop',
+    buttonText: 'Shop Now',
+    link: '/shop',
   },
   {
-    id: 2,
-    image: '/images/hero/pexels-artbovich-7750099.jpg',
-    title: 'Luxury Hair',
-    highlight: 'Styling & Wigs',
+    id: 'fallback-2',
+    image: '/uploads/hero/pexels-artbovich-7750099.jpg',
+    title: 'Luxury Hair Styling & Wigs',
     subtitle: 'Transform your look with our premium collection of wigs and hair products',
-    cta: 'Explore Hair',
-    ctaLink: '/shop/hair',
+    buttonText: 'Explore Hair',
+    link: '/shop?category=hair',
   },
   {
-    id: 3,
-    image: '/images/hero/pexels-artbovich-7195812.jpg',
-    title: 'Book Your',
-    highlight: 'Salon Experience',
+    id: 'fallback-3',
+    image: '/uploads/hero/pexels-artbovich-7195812.jpg',
+    title: 'Book Your Salon Experience',
     subtitle: 'Professional makeup, hair styling, and beauty treatments by expert stylists',
-    cta: 'Book Appointment',
-    ctaLink: '/salon/booking',
+    buttonText: 'Book Appointment',
+    link: '/salon/booking',
   },
 ];
 
 // Categories Data - Fallback (should ideally be removed in favor of dynamic data)
 const categories = [
-  { id: 1, name: 'Hair Styling', image: '/images/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg', href: '/shop/hair', count: '0+' },
-  { id: 2, name: 'Makeup', image: '/images/categories/pexels-shattha-pilabut-38930-135620.jpg', href: '/shop/makeup', count: '0+' },
-  { id: 3, name: 'Skincare', image: '/images/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg', href: '/shop/skincare', count: '0+' },
-  { id: 4, name: 'Perfumes', image: '/images/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg', href: '/shop/perfumes', count: '0+' },
-  { id: 5, name: 'Jewelry', image: '/images/categories/pexels-hert-33561789.jpg', href: '/shop/jewelry', count: '0+' },
-  { id: 6, name: 'Bags', image: '/images/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg', href: '/shop/bags', count: '0+' },
+  { id: 1, name: 'Hair Styling', image: '/uploads/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg', href: '/shop/hair', count: '0+' },
+  { id: 2, name: 'Makeup', image: '/uploads/categories/pexels-shattha-pilabut-38930-135620.jpg', href: '/shop/makeup', count: '0+' },
+  { id: 3, name: 'Skincare', image: '/uploads/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg', href: '/shop/skincare', count: '0+' },
+  { id: 4, name: 'Perfumes', image: '/uploads/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg', href: '/shop/perfumes', count: '0+' },
+  { id: 5, name: 'Jewelry', image: '/uploads/categories/pexels-hert-33561789.jpg', href: '/shop/jewelry', count: '0+' },
+  { id: 6, name: 'Bags', image: '/uploads/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg', href: '/shop/bags', count: '0+' },
 ];
 
 // Featured Products Data
 const featuredProducts = [
-  { id: '1', name: 'Luxury Matte Lipstick', price: 45000, originalPrice: 65000, image: '/images/products/makeup/pexels-828860-2536009.jpg', category: 'Makeup', badge: 'Sale' as const, rating: 4.8, reviews: 124 },
-  { id: '2', name: 'HD Lace Front Wig', price: 450000, image: '/images/products/hair/pexels-venus-31818416.jpg', category: 'Hair', badge: 'Bestseller' as const, rating: 4.9, reviews: 89 },
-  { id: '3', name: 'Vitamin C Serum', price: 120000, image: '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg', category: 'Skincare', badge: 'New' as const, rating: 4.7, reviews: 56 },
-  { id: '4', name: 'Designer Handbag', price: 285000, originalPrice: 350000, image: '/images/products/bags/pexels-dhanno-22432991.jpg', category: 'Bags', badge: 'Sale' as const, rating: 4.6, reviews: 42 },
-  { id: '5', name: 'Gold Hoop Earrings', price: 75000, image: '/images/products/jewelry/pexels-castorlystock-3641059.jpg', category: 'Jewelry', badge: 'Trending' as const, rating: 4.8, reviews: 78 },
-  { id: '6', name: 'Luxury Perfume Set', price: 185000, image: '/images/products/perfumes/pexels-valeriya-724635.jpg', category: 'Perfumes', badge: 'New' as const, rating: 4.9, reviews: 34 },
-  { id: '7', name: 'Foundation Kit', price: 95000, image: '/images/products/makeup/pexels-shiny-diamond-3373734.jpg', category: 'Makeup', rating: 4.5, reviews: 167 },
-  { id: '8', name: 'Braiding Hair Extensions', price: 35000, image: '/images/products/hair/pexels-rdne-6923351.jpg', category: 'Hair', rating: 4.7, reviews: 203 },
+  { id: '1', name: 'Luxury Matte Lipstick', price: 45000, originalPrice: 65000, image: '/uploads/products/makeup/pexels-828860-2536009.jpg', category: 'Makeup', badge: 'Sale' as const, rating: 4.8, reviews: 124 },
+  { id: '2', name: 'HD Lace Front Wig', price: 450000, image: '/uploads/products/hair/pexels-venus-31818416.jpg', category: 'Hair', badge: 'Bestseller' as const, rating: 4.9, reviews: 89 },
+  { id: '3', name: 'Vitamin C Serum', price: 120000, image: '/uploads/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg', category: 'Skincare', badge: 'New' as const, rating: 4.7, reviews: 56 },
+  { id: '4', name: 'Designer Handbag', price: 285000, originalPrice: 350000, image: '/uploads/products/bags/pexels-dhanno-22432991.jpg', category: 'Bags', badge: 'Sale' as const, rating: 4.6, reviews: 42 },
+  { id: '5', name: 'Gold Hoop Earrings', price: 75000, image: '/uploads/products/jewelry/pexels-castorlystock-3641059.jpg', category: 'Jewelry', badge: 'Trending' as const, rating: 4.8, reviews: 78 },
+  { id: '6', name: 'Luxury Perfume Set', price: 185000, image: '/uploads/products/perfumes/pexels-valeriya-724635.jpg', category: 'Perfumes', badge: 'New' as const, rating: 4.9, reviews: 34 },
+  { id: '7', name: 'Foundation Kit', price: 95000, image: '/uploads/products/makeup/pexels-shiny-diamond-3373734.jpg', category: 'Makeup', rating: 4.5, reviews: 167 },
+  { id: '8', name: 'Braiding Hair Extensions', price: 35000, image: '/uploads/products/hair/pexels-rdne-6923351.jpg', category: 'Hair', rating: 4.7, reviews: 203 },
 ];
 
-// Testimonials Data
-const testimonials = [
-  { id: 1, name: 'Sarah Nakamya', role: 'Loyal Customer', image: '/images/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg', text: "CHOCKY'S has completely transformed my beauty routine. The quality of products is amazing!", rating: 5 },
-  { id: 2, name: 'Grace Achieng', role: 'Bridal Client', image: '/images/testimonials/pexels-artbovich-7195799.jpg', text: 'My wedding makeup was absolutely perfect! The team made me feel like a queen.', rating: 5 },
-  { id: 3, name: 'Diana Opio', role: 'Regular Client', image: '/images/testimonials/pexels-enginakyurt-3065209.jpg', text: 'I love the variety of products available. Everything is authentic and reasonably priced.', rating: 5 },
+// Fallback Testimonials Data
+const fallbackTestimonials = [
+  { id: '1', name: 'Sarah Nakamya', title: 'Loyal Customer', image: '/uploads/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg', content: "CHOCKY'S has completely transformed my beauty routine. The quality of products is amazing!", rating: 5 },
+  { id: '2', name: 'Grace Achieng', title: 'Bridal Client', image: '/uploads/testimonials/pexels-artbovich-7195799.jpg', content: 'My wedding makeup was absolutely perfect! The team made me feel like a queen.', rating: 5 },
+  { id: '3', name: 'Diana Opio', title: 'Regular Client', image: '/uploads/testimonials/pexels-enginakyurt-3065209.jpg', content: 'I love the variety of products available. Everything is authentic and reasonably priced.', rating: 5 },
 ];
 
 // Flash deal countdown timer hook
@@ -86,30 +84,63 @@ function useCountdown(targetDate: Date | null) {
   return timeLeft;
 }
 
+// Fallback features data
+const fallbackFeatures = [
+  { icon: 'fas fa-truck', title: 'Free Delivery', desc: 'On orders over UGX 100k' },
+  { icon: 'fas fa-shield-alt', title: '100% Authentic', desc: 'Genuine products only' },
+  { icon: 'fas fa-undo', title: 'Easy Returns', desc: '14-day return policy' },
+  { icon: 'fas fa-headset', title: '24/7 Support', desc: 'WhatsApp & Phone' },
+];
+
+// Fallback promo data
+const fallbackPromo = {
+  badge: 'Limited Time Offer',
+  title: 'Get 20% Off Your First Order',
+  description: 'Join our Glamour Club and enjoy exclusive discounts, early access to new arrivals, and special member perks.',
+  primaryButtonText: 'Shop Now',
+  primaryButtonLink: '/shop',
+  secondaryButtonText: 'Join Rewards',
+  secondaryButtonLink: '/rewards',
+  backgroundImage: '/uploads/banners/pexels-cottonbro-3993134.jpg',
+};
+
 export default function HomePage() {
+  const { settings } = useSiteSettings();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [dynamicProducts, setFeaturedProducts] = useState<any[]>([]);
   const [dynamicCategories, setCategories] = useState<any[]>([]);
+  const [heroSlides, setHeroSlides] = useState(fallbackHeroSlides);
+  const [displayTestimonials, setDisplayTestimonials] = useState(fallbackTestimonials);
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
   const [flashDeals, setFlashDeals] = useState<any[]>([]);
   const [flashDealEnd, setFlashDealEnd] = useState<Date | null>(null);
+  const [features, setFeatures] = useState(fallbackFeatures);
+  const [promoContent, setPromoContent] = useState(fallbackPromo);
   const [isLoading, setIsLoading] = useState(true);
 
   const countdown = useCountdown(flashDealEnd);
 
-  // Fetch featured products, categories, and active promotions
+  // Fetch featured products, categories, promotions, banners, testimonials, and content blocks
   useEffect(() => {
     async function fetchData() {
       try {
-        const [productsRes, categoriesRes, promosRes] = await Promise.all([
+        const [productsRes, categoriesRes, promosRes, bannersRes, testimonialsRes, featuresRes, promoRes] = await Promise.all([
           fetch('/api/products?featured=true&limit=8'),
           fetch('/api/categories?parentOnly=true'),
           fetch('/api/promotions/active'),
+          fetch('/api/banners'),
+          fetch('/api/testimonials'),
+          fetch('/api/content-blocks?page=home&section=features'),
+          fetch('/api/content-blocks?key=home-promo'),
         ]);
 
         const productsData = await productsRes.json();
         const categoriesData = await categoriesRes.json();
         const promosData = await promosRes.json();
+        const bannersData = await bannersRes.json();
+        const testimonialsData = await testimonialsRes.json();
+        const featuresData = await featuresRes.json();
+        const promoData = await promoRes.json();
 
         if (productsData.success) {
           setFeaturedProducts(productsData.data);
@@ -121,6 +152,49 @@ export default function HomePage() {
           const activePromo = promosData.data[0];
           setFlashDeals(activePromo.products || []);
           setFlashDealEnd(new Date(activePromo.endDate));
+        }
+        // Set hero banners from DB
+        if (bannersData.success && bannersData.data.length > 0) {
+          const heroBanners = bannersData.data.filter((b: any) => b.position === 'hero');
+          if (heroBanners.length > 0) {
+            setHeroSlides(heroBanners.map((b: any) => ({
+              id: b.id,
+              image: b.image,
+              title: b.title,
+              subtitle: b.subtitle || '',
+              buttonText: b.buttonText || 'Shop Now',
+              link: b.link || '/shop',
+            })));
+          }
+        }
+        // Set testimonials from DB
+        if (testimonialsData.success && testimonialsData.data.length > 0) {
+          setDisplayTestimonials(testimonialsData.data.slice(0, 6));
+        }
+        // Set features from ContentBlock API
+        if (featuresData.success && featuresData.data.length > 0) {
+          setFeatures(featuresData.data.map((block: any) => {
+            const meta = block.metadata ? JSON.parse(block.metadata) : {};
+            return {
+              icon: meta.icon || 'fas fa-star',
+              title: block.title || '',
+              desc: block.content || '',
+            };
+          }));
+        }
+        // Set promo content from ContentBlock API
+        if (promoData.success && promoData.data) {
+          const meta = promoData.data.metadata ? JSON.parse(promoData.data.metadata) : {};
+          setPromoContent({
+            badge: meta.badge || fallbackPromo.badge,
+            title: promoData.data.title || fallbackPromo.title,
+            description: promoData.data.content || fallbackPromo.description,
+            primaryButtonText: meta.primaryButtonText || fallbackPromo.primaryButtonText,
+            primaryButtonLink: meta.primaryButtonLink || fallbackPromo.primaryButtonLink,
+            secondaryButtonText: meta.secondaryButtonText || fallbackPromo.secondaryButtonText,
+            secondaryButtonLink: meta.secondaryButtonLink || fallbackPromo.secondaryButtonLink,
+            backgroundImage: meta.backgroundImage || fallbackPromo.backgroundImage,
+          });
         }
       } catch (error) {
         console.error('Error fetching homepage data:', error);
@@ -208,18 +282,17 @@ export default function HomePage() {
               Welcome to CHOCKY&apos;S
             </span>
             <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight">
-              {heroSlides[currentSlide].title}{' '}
-              <span className="text-cream">{heroSlides[currentSlide].highlight}</span>
+              {heroSlides[currentSlide].title}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 leading-relaxed">
               {heroSlides[currentSlide].subtitle}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                href={heroSlides[currentSlide].ctaLink}
+                href={heroSlides[currentSlide].link}
                 className="bg-primary text-white hover:bg-primary/90 px-5 sm:px-8 py-3 rounded-xl font-semibold transition-colors inline-flex items-center gap-2 shadow-lg"
               >
-                {heroSlides[currentSlide].cta}
+                {heroSlides[currentSlide].buttonText}
                 <i className="fas fa-arrow-right text-sm"></i>
               </Link>
               <Link
@@ -251,12 +324,7 @@ export default function HomePage() {
       <section className="bg-white py-4 sm:py-6 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {[
-              { icon: 'fas fa-truck', title: 'Free Delivery', desc: 'On orders over UGX 100k' },
-              { icon: 'fas fa-shield-alt', title: '100% Authentic', desc: 'Genuine products only' },
-              { icon: 'fas fa-undo', title: 'Easy Returns', desc: '14-day return policy' },
-              { icon: 'fas fa-headset', title: '24/7 Support', desc: 'WhatsApp & Phone' },
-            ].map((feature, index) => (
+            {features.map((feature, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-rose-gold rounded-full flex items-center justify-center text-white flex-shrink-0">
                   <i className={`${feature.icon} text-sm sm:text-base`}></i>
@@ -376,7 +444,7 @@ export default function HomePage() {
       {/* Promo Banner */}
       <section className="relative py-16 sm:py-20 overflow-hidden">
         <Image
-          src="/images/banners/pexels-cottonbro-3993134.jpg"
+          src={promoContent.backgroundImage}
           alt="Special Offer"
           fill
           className="object-cover"
@@ -387,20 +455,20 @@ export default function HomePage() {
         <div className="relative container mx-auto px-4">
           <div className="max-w-xl text-white">
             <span className="inline-block px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-medium mb-4">
-              Limited Time Offer
+              {promoContent.badge}
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mb-4">
-              Get 20% Off Your First Order
+              {promoContent.title}
             </h2>
             <p className="text-base sm:text-lg text-white/90 mb-6">
-              Join our Glamour Club and enjoy exclusive discounts, early access to new arrivals, and special member perks.
+              {promoContent.description}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/shop" className="bg-white text-primary hover:bg-gray-100 px-6 py-3 rounded-xl font-semibold transition-colors">
-                Shop Now
+              <Link href={promoContent.primaryButtonLink} className="bg-white text-primary hover:bg-gray-100 px-6 py-3 rounded-xl font-semibold transition-colors">
+                {promoContent.primaryButtonText}
               </Link>
-              <Link href="/rewards" className="border-2 border-white text-white hover:bg-white hover:text-primary px-6 py-3 rounded-xl font-semibold transition-colors">
-                Join Rewards
+              <Link href={promoContent.secondaryButtonLink} className="border-2 border-white text-white hover:bg-white hover:text-primary px-6 py-3 rounded-xl font-semibold transition-colors">
+                {promoContent.secondaryButtonText}
               </Link>
             </div>
           </div>
@@ -447,7 +515,7 @@ export default function HomePage() {
             <div className="relative overflow-hidden">
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-xl">
                 <Image
-                  src="/images/banners/pexels-artbovich-7750115.jpg"
+                  src="/uploads/banners/pexels-artbovich-7750115.jpg"
                   alt="Salon Services"
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
@@ -462,7 +530,7 @@ export default function HomePage() {
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white overflow-hidden bg-gray-200">
                         <Image
-                          src="/images/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg"
+                          src="/uploads/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg"
                           alt="Client"
                           width={40}
                           height={40}
@@ -495,27 +563,33 @@ export default function HomePage() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {testimonials.map((testimonial) => (
+            {displayTestimonials.map((testimonial) => (
               <div key={testimonial.id} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-1 text-primary mb-3">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <i key={i} className="fas fa-star text-sm"></i>
                   ))}
                 </div>
-                <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">&ldquo;{testimonial.text}&rdquo;</p>
+                <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">&ldquo;{testimonial.content}&rdquo;</p>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                    <Image
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      width={48}
-                      height={48}
-                      className="object-cover w-full h-full"
-                    />
+                    {testimonial.image ? (
+                      <Image
+                        src={testimonial.image}
+                        alt={testimonial.name}
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-primary font-bold text-lg">{testimonial.name.charAt(0)}</span>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 text-sm sm:text-base">{testimonial.name}</h4>
-                    <p className="text-xs sm:text-sm text-gray-500">{testimonial.role}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{testimonial.title || 'Customer'}</p>
                   </div>
                 </div>
               </div>
@@ -551,22 +625,24 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 sm:mb-12">
             <span className="text-primary font-semibold text-xs sm:text-sm uppercase tracking-wider">Follow Us</span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">@chockys_glamour</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold mt-2">
+              {settings.instagramHandle ? `@${settings.instagramHandle}` : '@chockys_glamour'}
+            </h2>
             <p className="text-gray-600 mt-2 text-sm sm:text-base">Join our community and share your glamour moments</p>
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             {[
-              '/images/products/makeup/pexels-828860-2536009.jpg',
-              '/images/products/jewelry/pexels-castorlystock-3641059.jpg',
-              '/images/products/hair/pexels-venus-31818416.jpg',
-              '/images/products/perfumes/pexels-valeriya-724635.jpg',
-              '/images/products/bags/pexels-dhanno-22432992.jpg',
-              '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
+              '/uploads/products/makeup/pexels-828860-2536009.jpg',
+              '/uploads/products/jewelry/pexels-castorlystock-3641059.jpg',
+              '/uploads/products/hair/pexels-venus-31818416.jpg',
+              '/uploads/products/perfumes/pexels-valeriya-724635.jpg',
+              '/uploads/products/bags/pexels-dhanno-22432992.jpg',
+              '/uploads/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
             ].map((image, index) => (
               <a
                 key={index}
-                href="https://instagram.com"
+                href={settings.instagramUrl || 'https://instagram.com'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="relative aspect-square rounded-lg sm:rounded-xl overflow-hidden group"

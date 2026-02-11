@@ -3,50 +3,51 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
-const stylists = [
+interface Stylist {
+  id: string;
+  name: string;
+  role: string;
+  image: string;
+  specialties: string[];
+  rating: number;
+  reviewCount: number;
+  bio?: string;
+}
+
+const fallbackStylists: Stylist[] = [
   {
-    id: 1,
-    name: 'Grace Nakamya',
-    role: 'Senior Hair Stylist',
-    image: '/images/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
-    specialties: ['Braiding', 'Wig Installation', 'Hair Coloring'],
-    rating: 4.9,
-    reviews: 156,
+    id: '1', name: 'Grace Nakamya', role: 'Senior Hair Stylist',
+    image: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
+    specialties: ['Braiding', 'Wig Installation', 'Hair Coloring'], rating: 4.9, reviewCount: 156,
   },
   {
-    id: 2,
-    name: 'Sarah Achieng',
-    role: 'Makeup Artist',
-    image: '/images/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg',
-    specialties: ['Bridal Makeup', 'Editorial', 'Special Effects'],
-    rating: 4.8,
-    reviews: 124,
+    id: '2', name: 'Sarah Achieng', role: 'Makeup Artist',
+    image: '/uploads/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg',
+    specialties: ['Bridal Makeup', 'Editorial', 'Special Effects'], rating: 4.8, reviewCount: 124,
   },
   {
-    id: 3,
-    name: 'Amina Hassan',
-    role: 'Skincare Specialist',
-    image: '/images/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg',
-    specialties: ['Facials', 'Anti-Aging', 'Acne Treatment'],
-    rating: 4.9,
-    reviews: 98,
+    id: '3', name: 'Amina Hassan', role: 'Skincare Specialist',
+    image: '/uploads/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg',
+    specialties: ['Facials', 'Anti-Aging', 'Acne Treatment'], rating: 4.9, reviewCount: 98,
   },
   {
-    id: 4,
-    name: 'Joy Namubiru',
-    role: 'Hair Colorist',
-    image: '/images/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg',
-    specialties: ['Balayage', 'Highlights', 'Color Correction'],
-    rating: 4.7,
-    reviews: 87,
+    id: '4', name: 'Joy Namubiru', role: 'Hair Colorist',
+    image: '/uploads/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg',
+    specialties: ['Balayage', 'Highlights', 'Color Correction'], rating: 4.7, reviewCount: 87,
   },
 ];
 
 export default function SalonPage() {
+  const { settings } = useSiteSettings();
   const [activeCategory, setActiveCategory] = useState(0);
   const [services, setServices] = useState<any[]>([]);
+  const [stylists, setStylists] = useState<Stylist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [stylistsLoading, setStylistsLoading] = useState(true);
+
+  const phoneDisplay = settings.storePhone.replace(/(\+256)(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4');
 
   // Fetch services from API
   useEffect(() => {
@@ -66,6 +67,48 @@ export default function SalonPage() {
     fetchServices();
   }, []);
 
+  // Fetch stylists from API
+  useEffect(() => {
+    async function fetchStylists() {
+      try {
+        const res = await fetch('/api/stylists');
+        const data = await res.json();
+        if (data.success && data.data.length > 0) {
+          setStylists(data.data.map((s: any) => {
+            let specialties: string[] = [];
+            if (Array.isArray(s.specialties)) {
+              specialties = s.specialties;
+            } else if (typeof s.specialties === 'string') {
+              try {
+                const parsed = JSON.parse(s.specialties);
+                specialties = Array.isArray(parsed) ? parsed : [];
+              } catch {
+                specialties = [];
+              }
+            }
+            return {
+              id: s.id,
+              name: s.name,
+              role: s.role || s.title || 'Stylist',
+              image: s.image || '/images/placeholder.jpg',
+              specialties,
+              rating: parseFloat(s.rating) || 0,
+              reviewCount: s.reviewCount || 0,
+              bio: s.bio,
+            };
+          }));
+        } else {
+          setStylists(fallbackStylists);
+        }
+      } catch {
+        setStylists(fallbackStylists);
+      } finally {
+        setStylistsLoading(false);
+      }
+    }
+    fetchStylists();
+  }, []);
+
   const formatPrice = (price: number) => {
     return `UGX ${price.toLocaleString()}`;
   };
@@ -76,7 +119,7 @@ export default function SalonPage() {
       <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="/images/banners/pexels-artbovich-7750115.jpg"
+            src="/uploads/banners/pexels-artbovich-7750115.jpg"
             alt="Salon Services"
             fill
             className="object-cover"
@@ -220,40 +263,54 @@ export default function SalonPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stylists.map((stylist) => (
-              <div key={stylist.id} className="group">
-                <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-4">
-                  <Image
-                    src={stylist.image}
-                    alt={stylist.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="flex flex-wrap gap-1">
-                        {stylist.specialties.map((specialty, index) => (
-                          <span key={index} className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded">
-                            {specialty}
-                          </span>
-                        ))}
+          {stylistsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] rounded-xl bg-gray-200 mb-4"></div>
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {stylists.map((stylist) => (
+                <div key={stylist.id} className="group">
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-4">
+                    <Image
+                      src={stylist.image}
+                      alt={stylist.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="flex flex-wrap gap-1">
+                          {stylist.specialties.map((specialty, index) => (
+                            <span key={index} className="text-xs bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded">
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <h3 className="font-semibold text-lg">{stylist.name}</h3>
+                  <p className="text-primary text-sm mb-2">{stylist.role}</p>
+                  {stylist.rating > 0 && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center text-primary">
+                        <i className="fas fa-star"></i>
+                        <span className="ml-1 font-medium">{stylist.rating}</span>
+                      </div>
+                      <span className="text-gray-400">({stylist.reviewCount} reviews)</span>
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-semibold text-lg">{stylist.name}</h3>
-                <p className="text-primary text-sm mb-2">{stylist.role}</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="flex items-center text-primary">
-                    <i className="fas fa-star"></i>
-                    <span className="ml-1 font-medium">{stylist.rating}</span>
-                  </div>
-                  <span className="text-gray-400">({stylist.reviews} reviews)</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -269,14 +326,14 @@ export default function SalonPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              '/images/products/hair/pexels-venus-31818416.jpg',
-              '/images/products/makeup/pexels-828860-2536009.jpg',
-              '/images/products/hair/pexels-rdne-6923351.jpg',
-              '/images/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
-              '/images/products/makeup/pexels-shiny-diamond-3373734.jpg',
-              '/images/products/hair/pexels-alinaskazka-14730865.jpg',
-              '/images/products/skincare/pexels-karola-g-4889036.jpg',
-              '/images/products/makeup/pexels-828860-2693644.jpg',
+              '/uploads/products/hair/pexels-venus-31818416.jpg',
+              '/uploads/products/makeup/pexels-828860-2536009.jpg',
+              '/uploads/products/hair/pexels-rdne-6923351.jpg',
+              '/uploads/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
+              '/uploads/products/makeup/pexels-shiny-diamond-3373734.jpg',
+              '/uploads/products/hair/pexels-alinaskazka-14730865.jpg',
+              '/uploads/products/skincare/pexels-karola-g-4889036.jpg',
+              '/uploads/products/makeup/pexels-828860-2693644.jpg',
             ].map((image, index) => (
               <div key={index} className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer">
                 <Image
@@ -309,7 +366,7 @@ export default function SalonPage() {
               <i className="fas fa-calendar-alt mr-2"></i>
               Book Appointment
             </Link>
-            <a href="tel:+256700123456" className="btn border-2 border-white text-white hover:bg-white hover:text-primary px-8 py-4">
+            <a href={`tel:${settings.storePhone}`} className="btn border-2 border-white text-white hover:bg-white hover:text-primary px-8 py-4">
               <i className="fas fa-phone mr-2"></i>
               Call Us
             </a>
@@ -326,21 +383,21 @@ export default function SalonPage() {
                 <i className="fas fa-map-marker-alt text-xl text-primary"></i>
               </div>
               <h3 className="font-semibold mb-2">Visit Us</h3>
-              <p className="text-gray-600">Kampala Road, Kampala<br />Uganda</p>
+              <p className="text-gray-600">{settings.storeAddress.split(',').slice(0, 2).join(', ')}<br />{settings.storeAddress.split(',').slice(2).join(', ').trim() || 'Uganda'}</p>
             </div>
             <div>
               <div className="w-14 h-14 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
                 <i className="fas fa-clock text-xl text-primary"></i>
               </div>
               <h3 className="font-semibold mb-2">Opening Hours</h3>
-              <p className="text-gray-600">Mon - Sat: 9AM - 6PM<br />Sunday: By Appointment</p>
+              <p className="text-gray-600">Mon - Sat: {settings.openingHoursWeekday || '9:00 AM - 7:00 PM'}<br />Sunday: {settings.openingHoursSunday || '10:00 AM - 5:00 PM'}</p>
             </div>
             <div>
               <div className="w-14 h-14 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
                 <i className="fas fa-phone text-xl text-primary"></i>
               </div>
               <h3 className="font-semibold mb-2">Contact</h3>
-              <p className="text-gray-600">+256 700 123 456<br />info@chockys.ug</p>
+              <p className="text-gray-600">{phoneDisplay}<br />{settings.storeEmail}</p>
             </div>
           </div>
         </div>

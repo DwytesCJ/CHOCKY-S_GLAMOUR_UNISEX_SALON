@@ -8,55 +8,12 @@ import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 
-const navigation = [
-  { name: 'Home', href: '/' },
-  { 
-    name: 'Shop', 
-    href: '/shop',
-    megaMenu: [
-      {
-        title: 'Hair Styling',
-        items: [
-          { name: 'Wigs & Extensions', href: '/shop/hair/wigs' },
-          { name: 'Hair Care Products', href: '/shop/hair/care' },
-          { name: 'Styling Tools', href: '/shop/hair/tools' },
-          { name: 'Hair Accessories', href: '/shop/hair/accessories' },
-        ]
-      },
-      {
-        title: 'Makeup',
-        items: [
-          { name: 'Face', href: '/shop/makeup/face' },
-          { name: 'Eyes', href: '/shop/makeup/eyes' },
-          { name: 'Lips', href: '/shop/makeup/lips' },
-          { name: 'Tools & Brushes', href: '/shop/makeup/tools' },
-        ]
-      },
-      {
-        title: 'Skincare',
-        items: [
-          { name: 'Cleansers', href: '/shop/skincare/cleansers' },
-          { name: 'Moisturizers', href: '/shop/skincare/moisturizers' },
-          { name: 'Serums', href: '/shop/skincare/serums' },
-          { name: 'Sun Care', href: '/shop/skincare/suncare' },
-        ]
-      },
-      {
-        title: 'More',
-        items: [
-          { name: 'Perfumes', href: '/shop/perfumes' },
-          { name: 'Jewelry', href: '/shop/jewelry' },
-          { name: 'Bags', href: '/shop/bags' },
-          { name: 'Gift Sets', href: '/shop/gifts' },
-        ]
-      },
-    ]
-  },
-  { name: 'Salon', href: '/salon' },
-  { name: 'Blog', href: '/blog' },
-  { name: 'Rewards', href: '/rewards' },
-  { name: 'About', href: '/about' },
-];
+// Navigation item type
+interface NavItem {
+  name: string;
+  href: string;
+  megaMenu?: { title: string; items: { name: string; href: string }[] }[];
+}
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -67,6 +24,15 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(100000);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [navigation, setNavigation] = useState<NavItem[]>([
+    { name: 'Home', href: '/' },
+    { name: 'Shop', href: '/shop' },
+    { name: 'Salon', href: '/salon' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Rewards', href: '/rewards' },
+    { name: 'About', href: '/about' },
+  ]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -96,6 +62,79 @@ export default function Header() {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // Fetch categories and build dynamic Shop mega menu
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await fetch('/api/categories');
+        const data = await res.json();
+        if (data.success && data.data.length > 0) {
+          setCategories(data.data);
+
+          // Build mega menu columns from categories (max 3 columns of categories + 1 featured column)
+          const cats = data.data.slice(0, 6);
+          const col1 = cats.slice(0, 3);
+          const col2 = cats.slice(3, 6);
+
+          const megaMenu: { title: string; items: { name: string; href: string }[] }[] = [];
+
+          if (col1.length > 0) {
+            megaMenu.push({
+              title: 'Categories',
+              items: col1.map((c: any) => ({
+                name: c.name,
+                href: `/shop?category=${c.slug}`,
+              })),
+            });
+          }
+
+          if (col2.length > 0) {
+            megaMenu.push({
+              title: 'More Categories',
+              items: col2.map((c: any) => ({
+                name: c.name,
+                href: `/shop?category=${c.slug}`,
+              })),
+            });
+          }
+
+          megaMenu.push({
+            title: 'Collections',
+            items: [
+              { name: 'New Arrivals', href: '/shop?new=true' },
+              { name: 'Bestsellers', href: '/shop?bestseller=true' },
+              { name: 'On Sale', href: '/shop?sale=true' },
+            ],
+          });
+
+          megaMenu.push({
+            title: 'Featured',
+            items: [
+              { name: 'Gift Sets', href: '/shop?tag=gift-sets' },
+              { name: 'Trending Now', href: '/shop?featured=true' },
+              { name: 'All Products', href: '/shop' },
+            ],
+          });
+
+          // Update navigation with dynamic Shop mega menu
+          setNavigation([
+            { name: 'Home', href: '/' },
+            { name: 'Shop', href: '/shop', megaMenu },
+            { name: 'Salon', href: '/salon' },
+            { name: 'Blog', href: '/blog' },
+            { name: 'Rewards', href: '/rewards' },
+            { name: 'About', href: '/about' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching categories for navigation:', error);
+        // Navigation stays with default (no mega menu) on error
+      }
+    }
+
+    fetchCategories();
   }, []);
 
   useEffect(() => {

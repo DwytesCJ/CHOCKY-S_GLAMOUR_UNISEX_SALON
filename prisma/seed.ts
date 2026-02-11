@@ -68,7 +68,11 @@ async function main() {
   const adminPassword = await hash('Admin@123', 12);
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@chockys.ug' },
-    update: {},
+    update: {
+      password: adminPassword,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    },
     create: {
       email: 'admin@chockys.ug',
       password: adminPassword,
@@ -83,71 +87,71 @@ async function main() {
 
   console.log('Created admin user: admin@chockys.ug / Admin@123');
 
-  // Create Categories
+  // Create Categories (using real uploaded images)
   const categories = await Promise.all([
     prisma.category.upsert({
       where: { slug: 'hair-styling' },
-      update: {},
+      update: { image: '/uploads/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg' },
       create: {
         name: 'Hair Styling',
         slug: 'hair-styling',
         description: 'Wigs, extensions, hair care products, and styling tools',
-        image: '/images/categories/hair.jpg',
+        image: '/uploads/categories/iwaria-inc-DzMmp0uewcg-unsplash.jpg',
         sortOrder: 1,
       },
     }),
     prisma.category.upsert({
       where: { slug: 'jewelry-ornaments' },
-      update: {},
+      update: { image: '/uploads/categories/pexels-hert-33561789.jpg' },
       create: {
         name: 'Jewelry & Ornaments',
         slug: 'jewelry-ornaments',
         description: 'Earrings, necklaces, bracelets, rings, and jewelry sets',
-        image: '/images/categories/jewelry.jpg',
+        image: '/uploads/categories/pexels-hert-33561789.jpg',
         sortOrder: 2,
       },
     }),
     prisma.category.upsert({
       where: { slug: 'bags-accessories' },
-      update: {},
+      update: { image: '/uploads/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg' },
       create: {
         name: 'Bags & Accessories',
         slug: 'bags-accessories',
         description: 'Handbags, clutches, tote bags, and wallets',
-        image: '/images/categories/bags.jpg',
+        image: '/uploads/categories/jeff-kweba-OfCqjqsWmIc-unsplash.jpg',
         sortOrder: 3,
       },
     }),
     prisma.category.upsert({
       where: { slug: 'perfumes-fragrances' },
-      update: {},
+      update: { image: '/uploads/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg' },
       create: {
         name: 'Perfumes & Fragrances',
         slug: 'perfumes-fragrances',
         description: 'Women\'s perfumes, men\'s cologne, and gift sets',
-        image: '/images/categories/perfumes.jpg',
+        image: '/uploads/categories/element5-digital-ooPx1bxmTc4-unsplash.jpg',
         sortOrder: 4,
       },
     }),
     prisma.category.upsert({
       where: { slug: 'makeup' },
-      update: {},
+      update: { image: '/uploads/categories/pexels-shattha-pilabut-38930-135620.jpg' },
       create: {
         name: 'Makeup',
         slug: 'makeup',
         description: 'Face, eyes, lips, nails, and makeup tools',
-        image: '/images/categories/makeup.jpg',
+        image: '/uploads/categories/pexels-shattha-pilabut-38930-135620.jpg',
         sortOrder: 5,
       },
     }),
     prisma.category.upsert({
       where: { slug: 'skincare' },
-      update: {},
+      update: { image: '/uploads/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg' },
       create: {
         name: 'Skincare',
         slug: 'skincare',
         description: 'Cleansers, moisturizers, serums, and treatments',
-        image: '/images/categories/skincare.jpg',
+        image: '/uploads/categories/anna-keibalo-teFY4aA5dYA-unsplash.jpg',
         sortOrder: 6,
       },
     }),
@@ -206,9 +210,26 @@ async function main() {
 
   console.log('Created brands');
 
+  // Product image mapping - real uploaded filenames per product
+  const productImageMap: Record<string, string> = {
+    'luxury-matte-lipstick': '/uploads/products/makeup/pexels-828860-2536009.jpg',
+    'hd-lace-front-wig': '/uploads/products/hair/pexels-venus-31818416.jpg',
+    'vitamin-c-serum': '/uploads/products/skincare/pexels-misolo-cosmetic-2588316-4841339.jpg',
+    'designer-handbag': '/uploads/products/bags/pexels-dhanno-22432991.jpg',
+    'gold-hoop-earrings': '/uploads/products/jewelry/pexels-castorlystock-3641059.jpg',
+    'luxury-perfume-set': '/uploads/products/perfumes/pexels-valeriya-724635.jpg',
+    'foundation-kit': '/uploads/products/makeup/pexels-shiny-diamond-3373734.jpg',
+    'braiding-hair-extensions': '/uploads/products/hair/pexels-rdne-6923351.jpg',
+    'diamond-stud-earrings': '/uploads/products/jewelry/pexels-arif-13595436.jpg',
+    'evening-clutch-bag': '/uploads/products/bags/pexels-dhanno-22432992.jpg',
+    'mens-cologne-set': '/uploads/products/perfumes/pexels-didsss-2508558.jpg',
+    'eyeshadow-palette': '/uploads/products/makeup/pexels-amazingsobia-5420689.jpg',
+    'moisturizing-cream': '/uploads/products/skincare/pexels-828860-2587177.jpg',
+    'silk-scarf-collection': '/uploads/products/bags/pexels-dhanno-22434757.jpg',
+  };
+
   // Create ALL Current Website Products
   const products = [
-    // Featured Products from homepage
     {
       name: 'Luxury Matte Lipstick',
       slug: 'luxury-matte-lipstick',
@@ -331,7 +352,6 @@ async function main() {
       isNewArrival: false,
       isBestseller: true,
     },
-    // Additional products to enrich the catalog
     {
       name: 'Diamond Stud Earrings',
       slug: 'diamond-stud-earrings',
@@ -421,27 +441,244 @@ async function main() {
     },
   ];
 
-  // Create products with images
+  // Create products with images (using upsert to prevent duplicates)
   for (const productData of products) {
+    // First, resolve any SKU conflicts: if another product has this SKU but a different slug, delete it
+    const conflictingProduct = await prisma.product.findFirst({
+      where: {
+        sku: productData.sku,
+        NOT: { slug: productData.slug },
+      },
+    });
+    if (conflictingProduct) {
+      // Delete images and the conflicting product
+      await prisma.productImage.deleteMany({ where: { productId: conflictingProduct.id } });
+      await prisma.product.delete({ where: { id: conflictingProduct.id } });
+      console.log(`  Resolved SKU conflict for ${productData.sku}`);
+    }
+
     const product = await prisma.product.upsert({
       where: { slug: productData.slug },
-      update: {},
+      update: {
+        name: productData.name,
+        price: productData.price,
+        compareAtPrice: productData.compareAtPrice,
+        stockQuantity: productData.stockQuantity,
+        isActive: productData.isActive,
+        isFeatured: productData.isFeatured,
+        isNewArrival: productData.isNewArrival,
+        isBestseller: productData.isBestseller,
+        isOnSale: productData.isOnSale,
+      },
       create: productData,
     });
-    
-    // Add primary image
-    await prisma.productImage.create({
-      data: {
-        productId: product.id,
-        url: `/images/products/${productData.slug.replace(/-/g, '_')}.jpg`,
-        alt: productData.name,
-        sortOrder: 0,
-        isPrimary: true,
-      },
+
+    // Create product image using the mapped real filename
+    const imageUrl = productImageMap[productData.slug];
+    if (imageUrl) {
+      // Check if image already exists
+      const existingImage = await prisma.productImage.findFirst({
+        where: {
+          productId: product.id,
+          url: imageUrl,
+        },
+      });
+
+      if (!existingImage) {
+        await prisma.productImage.create({
+          data: {
+            productId: product.id,
+            url: imageUrl,
+            alt: productData.name,
+            sortOrder: 0,
+          },
+        });
+      }
+    }
+  }
+
+  console.log('Created products with images');
+
+  // Create Banners (using real uploaded images)
+  const banners = [
+    {
+      title: 'Summer Beauty Sale',
+      subtitle: 'Up to 50% off on selected items',
+      image: '/uploads/banners/pexels-cottonbro-3993134.jpg',
+      link: '/shop?sale=true',
+      buttonText: 'Shop Sale',
+      position: 'hero',
+      sortOrder: 1,
+      isActive: true,
+    },
+    {
+      title: 'New Arrivals',
+      subtitle: 'Discover the latest beauty trends',
+      image: '/uploads/banners/pexels-artbovich-7750115.jpg',
+      link: '/shop?new=true',
+      buttonText: 'Explore Now',
+      position: 'hero',
+      sortOrder: 2,
+      isActive: true,
+    },
+    {
+      title: 'Salon Services',
+      subtitle: 'Book your appointment today',
+      image: '/uploads/banners/minh-dang-DsauO8w-Nag-unsplash.jpg',
+      link: '/salon/booking',
+      buttonText: 'Book Now',
+      position: 'hero',
+      sortOrder: 3,
+      isActive: true,
+    },
+  ];
+
+  for (const banner of banners) {
+    await prisma.banner.upsert({
+      where: { title: banner.title },
+      update: { image: banner.image },
+      create: banner,
     });
   }
 
-  console.log('Created products');
+  console.log('Created banners');
+
+  // Create Testimonials (using real uploaded images)
+  const testimonials = [
+    {
+      name: 'Sarah Nakamya',
+      title: 'Loyal Customer',
+      content: "CHOCKY'S has completely transformed my beauty routine. The quality of products is amazing and the customer service is exceptional!",
+      rating: 5,
+      image: '/uploads/testimonials/pexels-git-stephen-gitau-302905-1801235.jpg',
+      isActive: true,
+    },
+    {
+      name: 'Grace Achieng',
+      title: 'Bridal Client',
+      content: 'My wedding makeup was absolutely perfect! The team made me feel like a queen on my special day.',
+      rating: 5,
+      image: '/uploads/testimonials/pexels-artbovich-7195799.jpg',
+      isActive: true,
+    },
+    {
+      name: 'Diana Opio',
+      title: 'Regular Client',
+      content: 'I love the variety of products available. Everything is authentic and reasonably priced. Highly recommend!',
+      rating: 5,
+      image: '/uploads/testimonials/pexels-enginakyurt-3065209.jpg',
+      isActive: true,
+    },
+  ];
+
+  for (const testimonial of testimonials) {
+    await prisma.testimonial.upsert({
+      where: { name: testimonial.name },
+      update: { image: testimonial.image },
+      create: testimonial,
+    });
+  }
+
+  console.log('Created testimonials');
+
+  // Create Stylists (using real uploaded images)
+  const stylists = [
+    {
+      name: 'Grace Nakamya',
+      slug: 'grace-nakamya',
+      title: 'Senior Hair Stylist',
+      bio: 'With over 10 years of experience, Grace specializes in braiding, weaving, and wig installation.',
+      image: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg',
+      specialties: JSON.stringify(['Braiding', 'Weaving', 'Wig Installation', 'Hair Coloring']),
+      isActive: true,
+    },
+    {
+      name: 'Diana Achieng',
+      slug: 'diana-achieng',
+      title: 'Lead Makeup Artist',
+      bio: 'Diana is our lead makeup artist with expertise in bridal, editorial, and everyday makeup looks.',
+      image: '/uploads/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg',
+      specialties: JSON.stringify(['Bridal Makeup', 'Editorial', 'Contouring', 'Special Effects']),
+      isActive: true,
+    },
+    {
+      name: 'Sarah Opio',
+      slug: 'sarah-opio',
+      title: 'Skincare Specialist',
+      bio: 'Sarah is a certified skincare specialist offering facials, treatments, and personalized skincare advice.',
+      image: '/uploads/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg',
+      specialties: JSON.stringify(['Facials', 'Chemical Peels', 'Microdermabrasion', 'Skincare Consultation']),
+      isActive: true,
+    },
+    {
+      name: 'Joseph Kato',
+      slug: 'joseph-kato',
+      title: 'Barber & Grooming Expert',
+      bio: 'Joseph brings precision and style to men\'s grooming with expert haircuts and beard styling.',
+      image: '/uploads/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg',
+      specialties: JSON.stringify(['Haircuts', 'Beard Styling', 'Hot Towel Shave', 'Hair Design']),
+      isActive: true,
+    },
+  ];
+
+  for (const stylist of stylists) {
+    await prisma.stylist.upsert({
+      where: { slug: stylist.slug },
+      update: { image: stylist.image },
+      create: stylist,
+    });
+  }
+
+  console.log('Created stylists');
+
+  // Create FAQs
+  const faqs = [
+    {
+      question: 'What payment methods do you accept?',
+      answer: 'We accept Mobile Money (MTN, Airtel), Visa/Mastercard, and Cash on Delivery for orders within Kampala.',
+      category: 'Payments',
+      sortOrder: 1,
+      isActive: true,
+    },
+    {
+      question: 'How long does delivery take?',
+      answer: 'Delivery within Kampala takes 1-2 business days. Upcountry deliveries take 3-5 business days depending on location.',
+      category: 'Shipping',
+      sortOrder: 2,
+      isActive: true,
+    },
+    {
+      question: 'Do you offer returns and refunds?',
+      answer: 'Yes, we offer a 14-day return policy for unused products in original packaging. Refunds are processed within 5-7 business days.',
+      category: 'Returns',
+      sortOrder: 3,
+      isActive: true,
+    },
+    {
+      question: 'Are your products authentic?',
+      answer: 'Absolutely! We only source products directly from authorized distributors and brands. All products are 100% authentic.',
+      category: 'Products',
+      sortOrder: 4,
+      isActive: true,
+    },
+    {
+      question: 'How do I book a salon appointment?',
+      answer: 'You can book online through our website, call us at +256 703 878 485, or visit our salon directly.',
+      category: 'Salon',
+      sortOrder: 5,
+      isActive: true,
+    },
+  ];
+
+  for (const faq of faqs) {
+    await prisma.fAQ.upsert({
+      where: { question: faq.question },
+      update: {},
+      create: faq,
+    });
+  }
+
+  console.log('Created FAQs');
 
   // Create Service Categories
   const serviceCategories = await Promise.all([
@@ -451,8 +688,7 @@ async function main() {
       create: {
         name: 'Hair Services',
         slug: 'hair-services',
-        description: 'Professional hair styling, coloring, and treatments',
-        icon: 'fa-cut',
+        description: 'Professional hair styling, treatments, and care',
         sortOrder: 1,
       },
     }),
@@ -463,19 +699,27 @@ async function main() {
         name: 'Makeup Services',
         slug: 'makeup-services',
         description: 'Professional makeup for all occasions',
-        icon: 'fa-paint-brush',
         sortOrder: 2,
       },
     }),
     prisma.serviceCategory.upsert({
-      where: { slug: 'skin-treatments' },
+      where: { slug: 'skincare-services' },
       update: {},
       create: {
-        name: 'Skin Treatments',
-        slug: 'skin-treatments',
-        description: 'Facials, treatments, and skincare services',
-        icon: 'fa-spa',
+        name: 'Skincare Services',
+        slug: 'skincare-services',
+        description: 'Facials, treatments, and skincare consultations',
         sortOrder: 3,
+      },
+    }),
+    prisma.serviceCategory.upsert({
+      where: { slug: 'nail-services' },
+      update: {},
+      create: {
+        name: 'Nail Services',
+        slug: 'nail-services',
+        description: 'Manicures, pedicures, and nail art',
+        sortOrder: 4,
       },
     }),
   ]);
@@ -484,265 +728,122 @@ async function main() {
 
   // Create Salon Services
   const services = [
-    { name: 'Hair Styling', slug: 'hair-styling-service', price: 50000, duration: 60, categoryId: serviceCategories[0].id },
-    { name: 'Hair Coloring', slug: 'hair-coloring', price: 150000, duration: 180, categoryId: serviceCategories[0].id },
-    { name: 'Wig Installation', slug: 'wig-installation', price: 80000, duration: 90, categoryId: serviceCategories[0].id },
-    { name: 'Braiding & Plaiting', slug: 'braiding-plaiting', price: 100000, duration: 240, categoryId: serviceCategories[0].id },
-    { name: 'Bridal Makeup', slug: 'bridal-makeup', price: 250000, duration: 120, categoryId: serviceCategories[1].id },
-    { name: 'Event Makeup', slug: 'event-makeup', price: 100000, duration: 60, categoryId: serviceCategories[1].id },
-    { name: 'Classic Facial', slug: 'classic-facial', price: 80000, duration: 60, categoryId: serviceCategories[2].id },
-    { name: 'Anti-Aging Facial', slug: 'anti-aging-facial', price: 120000, duration: 90, categoryId: serviceCategories[2].id },
+    { name: 'Braiding', slug: 'braiding', description: 'Professional braiding services', price: 50000, duration: 180, categoryId: serviceCategories[0].id, isActive: true },
+    { name: 'Wig Installation', slug: 'wig-installation', description: 'Expert wig installation and styling', price: 80000, duration: 120, categoryId: serviceCategories[0].id, isActive: true },
+    { name: 'Hair Coloring', slug: 'hair-coloring', description: 'Professional hair coloring services', price: 100000, duration: 150, categoryId: serviceCategories[0].id, isActive: true },
+    { name: 'Hair Treatment', slug: 'hair-treatment', description: 'Deep conditioning and treatment', price: 60000, duration: 60, categoryId: serviceCategories[0].id, isActive: true },
+    { name: 'Bridal Makeup', slug: 'bridal-makeup', description: 'Complete bridal makeup package', price: 250000, duration: 180, categoryId: serviceCategories[1].id, isActive: true },
+    { name: 'Party Makeup', slug: 'party-makeup', description: 'Glamorous party makeup', price: 80000, duration: 60, categoryId: serviceCategories[1].id, isActive: true },
+    { name: 'Facial Treatment', slug: 'facial-treatment', description: 'Deep cleansing facial', price: 100000, duration: 90, categoryId: serviceCategories[2].id, isActive: true },
+    { name: 'Manicure & Pedicure', slug: 'mani-pedi', description: 'Complete nail care package', price: 50000, duration: 90, categoryId: serviceCategories[3].id, isActive: true },
   ];
 
   for (const service of services) {
     await prisma.salonService.upsert({
       where: { slug: service.slug },
       update: {},
-      create: {
-        name: service.name,
-        slug: service.slug,
-        price: service.price,
-        duration: service.duration,
-        categoryId: service.categoryId,
-        description: `Professional ${service.name.toLowerCase()} service`,
-        isActive: true,
-      },
+      create: service,
     });
   }
 
   console.log('Created salon services');
 
-  // Create Testimonials
-  const testimonials = [
-    {
-      name: 'Sarah Nakamya',
-      title: 'Loyal Customer',
-      image: '/images/testimonials/customer1.jpg',
-      content: "CHOCKY'S has completely transformed my beauty routine. The quality of products is amazing!",
-      rating: 5,
-      isActive: true,
-      isFeatured: true,
-      sortOrder: 1,
-    },
-    {
-      name: 'Grace Achieng',
-      title: 'Bridal Client',
-      image: '/images/testimonials/customer2.jpg',
-      content: 'My wedding makeup was absolutely perfect! The team made me feel like a queen.',
-      rating: 5,
-      isActive: true,
-      isFeatured: true,
-      sortOrder: 2,
-    },
-    {
-      name: 'Diana Opio',
-      title: 'Regular Client',
-      image: '/images/testimonials/customer3.jpg',
-      content: 'I love the variety of products available. Everything is authentic and reasonably priced.',
-      rating: 5,
-      isActive: true,
-      isFeatured: true,
-      sortOrder: 3,
-    },
-  ];
-
-  for (const testimonial of testimonials) {
-    await prisma.testimonial.create({
-      data: testimonial,
-    });
-  }
-
-  console.log('Created testimonials');
-
-  // Create Hero Banners
-  const banners = [
-    {
-      title: 'Summer Beauty Sale',
-      subtitle: 'Up to 50% off selected items',
-      image: '/images/banners/summer-sale.jpg',
-      link: '/shop',
-      buttonText: 'Shop Now',
-      position: 'hero',
-      sortOrder: 1,
-      isActive: true,
-    },
-    {
-      title: 'New Arrivals',
-      subtitle: 'Discover our latest beauty essentials',
-      image: '/images/banners/new-arrivals.jpg',
-      link: '/shop?new=true',
-      buttonText: 'Explore',
-      position: 'hero',
-      sortOrder: 2,
-      isActive: true,
-    },
-    {
-      title: 'Salon Services',
-      subtitle: 'Professional beauty treatments',
-      image: '/images/banners/salon-services.jpg',
-      link: '/salon',
-      buttonText: 'Book Now',
-      position: 'hero',
-      sortOrder: 3,
-      isActive: true,
-    },
-  ];
-
-  for (const banner of banners) {
-    await prisma.banner.create({
-      data: banner,
-    });
-  }
-
-  console.log('Created banners');
-
   // Create Site Settings
-  const settings = [
-    { key: 'business_name', value: "CHOCKY'S Ultimate Glamour Unisex Salon", type: 'text', group: 'general' },
-    { key: 'business_address', value: 'Annex Building (Wandegeya), Kampala, Uganda', type: 'text', group: 'general' },
-    { key: 'business_phone', value: '+256703878485', type: 'text', group: 'general' },
-    { key: 'business_email', value: 'josephchandin@gmail.com', type: 'text', group: 'general' },
-    { key: 'social_instagram', value: 'https://www.instagram.com/chockys_ultimate_glamour/', type: 'text', group: 'social' },
+  const siteSettings = [
+    { key: 'storeName', value: "CHOCKY'S Ultimate Glamour" },
+    { key: 'storeEmail', value: 'info@chockys.ug' },
+    { key: 'storePhone', value: '+256703878485' },
+    { key: 'storeAddress', value: 'Plot 123, Kampala Road, Kampala, Uganda' },
+    { key: 'currency', value: 'UGX' },
+    { key: 'facebookUrl', value: 'https://facebook.com/chockysglamour' },
+    { key: 'instagramUrl', value: 'https://instagram.com/chockysglamour' },
+    { key: 'twitterUrl', value: 'https://twitter.com/chockysglamour' },
+    { key: 'whatsappNumber', value: '+256703878485' },
+    { key: 'openingHoursWeekday', value: 'Mon - Fri: 9:00 AM - 7:00 PM' },
+    { key: 'openingHoursSaturday', value: 'Saturday: 9:00 AM - 6:00 PM' },
+    { key: 'openingHoursSunday', value: 'Sunday: 10:00 AM - 4:00 PM' },
   ];
 
-  for (const setting of settings) {
+  for (const setting of siteSettings) {
     await prisma.siteSetting.upsert({
       where: { key: setting.key },
-      update: {},
+      update: { value: setting.value },
       create: setting,
     });
   }
 
   console.log('Created site settings');
 
-  // Create Blog Categories
-  await Promise.all([
-    prisma.blogCategory.upsert({
-      where: { slug: 'tutorials' },
-      update: {},
-      create: { name: 'Tutorials', slug: 'tutorials' },
-    }),
-    prisma.blogCategory.upsert({
-      where: { slug: 'beauty-tips' },
-      update: {},
-      create: { name: 'Beauty Tips', slug: 'beauty-tips' },
-    }),
-    prisma.blogCategory.upsert({
-      where: { slug: 'trends' },
-      update: {},
-      create: { name: 'Trends', slug: 'trends' },
-    }),
-    prisma.blogCategory.upsert({
-      where: { slug: 'skincare-blog' },
-      update: {},
-      create: { name: 'Skincare', slug: 'skincare-blog' },
-    }),
-  ]);
-
-  console.log('Created blog categories');
-
-  // Create FAQs
-  const faqs = [
-    {
-      question: 'What payment methods do you accept?',
-      answer: 'We accept Mobile Money (MTN and Airtel), PayPal, and major credit/debit cards.',
-      category: 'Payment',
-      sortOrder: 1,
-    },
-    {
-      question: 'How long does delivery take?',
-      answer: 'Delivery within Kampala takes 1-2 business days. Other areas in Uganda take 3-5 business days.',
-      category: 'Shipping',
-      sortOrder: 2,
-    },
-    {
-      question: 'Can I return or exchange products?',
-      answer: 'Yes, we accept returns within 7 days of delivery for unused products in original packaging.',
-      category: 'Returns',
-      sortOrder: 3,
-    },
-    {
-      question: 'How do I book a salon appointment?',
-      answer: 'You can book online through our website, call us, or send a WhatsApp message.',
-      category: 'Appointments',
-      sortOrder: 4,
-    },
-    {
-      question: 'Are your products authentic?',
-      answer: 'Yes, all our products are 100% authentic and sourced directly from authorized distributors.',
-      category: 'Products',
-      sortOrder: 5,
-    },
+  // Create Content Blocks (using real uploaded images)
+  const contentBlocks = [
+    // Homepage features
+    { key: 'home-feature-1', title: 'Free Delivery', content: 'On orders over UGX 100k', page: 'home', section: 'features', type: 'feature', metadata: JSON.stringify({ icon: 'fas fa-truck' }), sortOrder: 1, isActive: true },
+    { key: 'home-feature-2', title: '100% Authentic', content: 'Genuine products only', page: 'home', section: 'features', type: 'feature', metadata: JSON.stringify({ icon: 'fas fa-shield-alt' }), sortOrder: 2, isActive: true },
+    { key: 'home-feature-3', title: 'Easy Returns', content: '14-day return policy', page: 'home', section: 'features', type: 'feature', metadata: JSON.stringify({ icon: 'fas fa-undo' }), sortOrder: 3, isActive: true },
+    { key: 'home-feature-4', title: '24/7 Support', content: 'WhatsApp & Phone', page: 'home', section: 'features', type: 'feature', metadata: JSON.stringify({ icon: 'fas fa-headset' }), sortOrder: 4, isActive: true },
+    // Homepage promo
+    { key: 'home-promo', title: 'Get 20% Off Your First Order', content: 'Join our Glamour Club and enjoy exclusive discounts, early access to new arrivals, and special member perks.', page: 'home', section: 'promo', type: 'banner', metadata: JSON.stringify({ badge: 'Limited Time Offer', primaryButtonText: 'Shop Now', primaryButtonLink: '/shop', secondaryButtonText: 'Join Rewards', secondaryButtonLink: '/rewards', backgroundImage: '/uploads/banners/pexels-cottonbro-3993134.jpg' }), sortOrder: 1, isActive: true },
+    // About page values
+    { key: 'about-value-1', title: 'Passion for Beauty', content: 'We are driven by our love for beauty and helping our customers look and feel their best.', page: 'about', section: 'values', type: 'value', metadata: JSON.stringify({ icon: 'fa-heart' }), sortOrder: 1, isActive: true },
+    { key: 'about-value-2', title: 'Quality First', content: 'We only offer authentic, premium products from trusted brands you can rely on.', page: 'about', section: 'values', type: 'value', metadata: JSON.stringify({ icon: 'fa-gem' }), sortOrder: 2, isActive: true },
+    { key: 'about-value-3', title: 'Customer Focus', content: 'Your satisfaction is our priority. We go above and beyond to serve you better.', page: 'about', section: 'values', type: 'value', metadata: JSON.stringify({ icon: 'fa-users' }), sortOrder: 3, isActive: true },
+    { key: 'about-value-4', title: 'Sustainability', content: 'We are committed to eco-friendly practices and supporting sustainable beauty.', page: 'about', section: 'values', type: 'value', metadata: JSON.stringify({ icon: 'fa-leaf' }), sortOrder: 4, isActive: true },
+    // About page stats
+    { key: 'about-stat-1', title: '10K+', content: 'Happy Customers', page: 'about', section: 'stats', type: 'stat', metadata: JSON.stringify({ number: '10K+' }), sortOrder: 1, isActive: true },
+    { key: 'about-stat-2', title: '500+', content: 'Products', page: 'about', section: 'stats', type: 'stat', metadata: JSON.stringify({ number: '500+' }), sortOrder: 2, isActive: true },
+    { key: 'about-stat-3', title: '50+', content: 'Brands', page: 'about', section: 'stats', type: 'stat', metadata: JSON.stringify({ number: '50+' }), sortOrder: 3, isActive: true },
+    { key: 'about-stat-4', title: '5+', content: 'Years Experience', page: 'about', section: 'stats', type: 'stat', metadata: JSON.stringify({ number: '5+' }), sortOrder: 4, isActive: true },
   ];
 
-  for (let i = 0; i < faqs.length; i++) {
-    await prisma.fAQ.create({
-      data: {
-        ...faqs[i],
-        isActive: true,
-      },
+  for (const block of contentBlocks) {
+    await prisma.contentBlock.upsert({
+      where: { key: block.key },
+      update: { metadata: block.metadata },
+      create: block,
     });
   }
 
-  console.log('Created FAQs');
+  console.log('Created content blocks');
 
-  console.log('');
-  // ========================================
-  // Seed Shipping Zones - Uganda Town Centers
-  // ========================================
-  console.log('Seeding shipping zones...');
-  
+  // Create Shipping Zones for Uganda
   const shippingZones = [
     // Central Region
-    { name: 'Kampala Central', district: 'Kampala', region: 'Central', distanceKm: 3, baseFee: 3000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Wandegeya', district: 'Kampala', region: 'Central', distanceKm: 0, baseFee: 0, perKgFee: 0, estimatedDays: 1 },
-    { name: 'Ntinda', district: 'Kampala', region: 'Central', distanceKm: 5, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Nakasero', district: 'Kampala', region: 'Central', distanceKm: 3, baseFee: 3000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Kololo', district: 'Kampala', region: 'Central', distanceKm: 4, baseFee: 4000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Bukoto', district: 'Kampala', region: 'Central', distanceKm: 4, baseFee: 4000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Kamwokya', district: 'Kampala', region: 'Central', distanceKm: 2, baseFee: 2000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Makerere', district: 'Kampala', region: 'Central', distanceKm: 1, baseFee: 2000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Kawempe', district: 'Kampala', region: 'Central', distanceKm: 5, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Rubaga', district: 'Kampala', region: 'Central', distanceKm: 6, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Makindye', district: 'Kampala', region: 'Central', distanceKm: 8, baseFee: 7000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Nansana', district: 'Wakiso', region: 'Central', distanceKm: 12, baseFee: 8000, perKgFee: 600, estimatedDays: 1 },
-    { name: 'Kira', district: 'Wakiso', region: 'Central', distanceKm: 12, baseFee: 8000, perKgFee: 600, estimatedDays: 1 },
-    { name: 'Entebbe', district: 'Wakiso', region: 'Central', distanceKm: 37, baseFee: 15000, perKgFee: 700, estimatedDays: 1 },
-    { name: 'Mukono Town', district: 'Mukono', region: 'Central', distanceKm: 24, baseFee: 12000, perKgFee: 600, estimatedDays: 1 },
-    { name: 'Gayaza', district: 'Wakiso', region: 'Central', distanceKm: 16, baseFee: 10000, perKgFee: 600, estimatedDays: 1 },
-    { name: 'Bweyogerere', district: 'Wakiso', region: 'Central', distanceKm: 10, baseFee: 7000, perKgFee: 500, estimatedDays: 1 },
-    { name: 'Kasangati', district: 'Wakiso', region: 'Central', distanceKm: 14, baseFee: 9000, perKgFee: 600, estimatedDays: 1 },
-    { name: 'Mpigi Town', district: 'Mpigi', region: 'Central', distanceKm: 37, baseFee: 15000, perKgFee: 700, estimatedDays: 2 },
-    { name: 'Masaka City', district: 'Masaka', region: 'Central', distanceKm: 130, baseFee: 25000, perKgFee: 800, estimatedDays: 2 },
-    { name: 'Mityana Town', district: 'Mityana', region: 'Central', distanceKm: 70, baseFee: 18000, perKgFee: 700, estimatedDays: 2 },
-    { name: 'Luweero Town', district: 'Luweero', region: 'Central', distanceKm: 75, baseFee: 18000, perKgFee: 700, estimatedDays: 2 },
-    { name: 'Bombo', district: 'Luweero', region: 'Central', distanceKm: 36, baseFee: 15000, perKgFee: 700, estimatedDays: 1 },
+    { name: 'Kampala Central', district: 'Kampala', region: 'Central', distanceKm: 0, baseFee: 5000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Kampala Suburbs', district: 'Wakiso', region: 'Central', distanceKm: 15, baseFee: 8000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Entebbe', district: 'Wakiso', region: 'Central', distanceKm: 40, baseFee: 12000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Mukono Town', district: 'Mukono', region: 'Central', distanceKm: 25, baseFee: 10000, perKgFee: 500, estimatedDays: 1 },
+    { name: 'Jinja City', district: 'Jinja', region: 'Central', distanceKm: 80, baseFee: 15000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Masaka City', district: 'Masaka', region: 'Central', distanceKm: 130, baseFee: 20000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Mpigi Town', district: 'Mpigi', region: 'Central', distanceKm: 35, baseFee: 12000, perKgFee: 600, estimatedDays: 1 },
+    { name: 'Luwero Town', district: 'Luwero', region: 'Central', distanceKm: 75, baseFee: 15000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Mityana Town', district: 'Mityana', region: 'Central', distanceKm: 70, baseFee: 15000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Mubende Town', district: 'Mubende', region: 'Central', distanceKm: 150, baseFee: 22000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Kayunga Town', district: 'Kayunga', region: 'Central', distanceKm: 75, baseFee: 15000, perKgFee: 700, estimatedDays: 2 },
+    { name: 'Nakasongola Town', district: 'Nakasongola', region: 'Central', distanceKm: 115, baseFee: 18000, perKgFee: 750, estimatedDays: 2 },
     // Eastern Region
-    { name: 'Jinja City', district: 'Jinja', region: 'Eastern', distanceKm: 80, baseFee: 20000, perKgFee: 800, estimatedDays: 2 },
-    { name: 'Iganga Town', district: 'Iganga', region: 'Eastern', distanceKm: 115, baseFee: 23000, perKgFee: 800, estimatedDays: 2 },
-    { name: 'Mbale City', district: 'Mbale', region: 'Eastern', distanceKm: 230, baseFee: 30000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Tororo Town', district: 'Tororo', region: 'Eastern', distanceKm: 250, baseFee: 32000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Soroti City', district: 'Soroti', region: 'Eastern', distanceKm: 300, baseFee: 35000, perKgFee: 1000, estimatedDays: 3 },
-    { name: 'Busia Town', district: 'Busia', region: 'Eastern', distanceKm: 200, baseFee: 28000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Kamuli Town', district: 'Kamuli', region: 'Eastern', distanceKm: 140, baseFee: 25000, perKgFee: 800, estimatedDays: 2 },
-    { name: 'Bugiri Town', district: 'Bugiri', region: 'Eastern', distanceKm: 165, baseFee: 27000, perKgFee: 800, estimatedDays: 3 },
-    { name: 'Pallisa Town', district: 'Pallisa', region: 'Eastern', distanceKm: 220, baseFee: 30000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Kumi Town', district: 'Kumi', region: 'Eastern', distanceKm: 280, baseFee: 33000, perKgFee: 1000, estimatedDays: 3 },
-    { name: 'Kapchorwa Town', district: 'Kapchorwa', region: 'Eastern', distanceKm: 280, baseFee: 35000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Mbale City', district: 'Mbale', region: 'Eastern', distanceKm: 225, baseFee: 28000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Soroti City', district: 'Soroti', region: 'Eastern', distanceKm: 300, baseFee: 32000, perKgFee: 1000, estimatedDays: 3 },
+    { name: 'Tororo Town', district: 'Tororo', region: 'Eastern', distanceKm: 200, baseFee: 25000, perKgFee: 850, estimatedDays: 3 },
+    { name: 'Iganga Town', district: 'Iganga', region: 'Eastern', distanceKm: 120, baseFee: 18000, perKgFee: 750, estimatedDays: 2 },
+    { name: 'Busia Town', district: 'Busia', region: 'Eastern', distanceKm: 200, baseFee: 25000, perKgFee: 850, estimatedDays: 3 },
+    { name: 'Kumi Town', district: 'Kumi', region: 'Eastern', distanceKm: 270, baseFee: 30000, perKgFee: 950, estimatedDays: 3 },
+    { name: 'Kapchorwa Town', district: 'Kapchorwa', region: 'Eastern', distanceKm: 280, baseFee: 32000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Pallisa Town', district: 'Pallisa', region: 'Eastern', distanceKm: 220, baseFee: 27000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Bugiri Town', district: 'Bugiri', region: 'Eastern', distanceKm: 150, baseFee: 22000, perKgFee: 800, estimatedDays: 2 },
+    { name: 'Kamuli Town', district: 'Kamuli', region: 'Eastern', distanceKm: 140, baseFee: 20000, perKgFee: 800, estimatedDays: 2 },
     // Western Region
-    { name: 'Mbarara City', district: 'Mbarara', region: 'Western', distanceKm: 270, baseFee: 32000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Fort Portal City', district: 'Kabarole', region: 'Western', distanceKm: 300, baseFee: 35000, perKgFee: 1000, estimatedDays: 3 },
-    { name: 'Kasese Town', district: 'Kasese', region: 'Western', distanceKm: 380, baseFee: 38000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Mbarara City', district: 'Mbarara', region: 'Western', distanceKm: 270, baseFee: 30000, perKgFee: 950, estimatedDays: 3 },
+    { name: 'Fort Portal City', district: 'Kabarole', region: 'Western', distanceKm: 300, baseFee: 32000, perKgFee: 1000, estimatedDays: 3 },
     { name: 'Kabale Town', district: 'Kabale', region: 'Western', distanceKm: 420, baseFee: 40000, perKgFee: 1100, estimatedDays: 4 },
-    { name: 'Bushenyi-Ishaka', district: 'Bushenyi', region: 'Western', distanceKm: 310, baseFee: 35000, perKgFee: 1000, estimatedDays: 3 },
-    { name: 'Hoima City', district: 'Hoima', region: 'Western', distanceKm: 200, baseFee: 28000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Masindi Town', district: 'Masindi', region: 'Western', distanceKm: 215, baseFee: 29000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Kibale Town', district: 'Kibale', region: 'Western', distanceKm: 230, baseFee: 30000, perKgFee: 900, estimatedDays: 3 },
-    { name: 'Ntungamo Town', district: 'Ntungamo', region: 'Western', distanceKm: 370, baseFee: 37000, perKgFee: 1000, estimatedDays: 4 },
-    { name: 'Rukungiri Town', district: 'Rukungiri', region: 'Western', distanceKm: 380, baseFee: 38000, perKgFee: 1000, estimatedDays: 4 },
+    { name: 'Kasese Town', district: 'Kasese', region: 'Western', distanceKm: 370, baseFee: 38000, perKgFee: 1050, estimatedDays: 4 },
+    { name: 'Hoima City', district: 'Hoima', region: 'Western', distanceKm: 230, baseFee: 28000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Masindi Town', district: 'Masindi', region: 'Western', distanceKm: 220, baseFee: 27000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Bushenyi Town', district: 'Bushenyi', region: 'Western', distanceKm: 320, baseFee: 33000, perKgFee: 1000, estimatedDays: 3 },
+    { name: 'Ntungamo Town', district: 'Ntungamo', region: 'Western', distanceKm: 380, baseFee: 38000, perKgFee: 1050, estimatedDays: 4 },
+    { name: 'Rukungiri Town', district: 'Rukungiri', region: 'Western', distanceKm: 400, baseFee: 40000, perKgFee: 1100, estimatedDays: 4 },
     { name: 'Kisoro Town', district: 'Kisoro', region: 'Western', distanceKm: 480, baseFee: 45000, perKgFee: 1200, estimatedDays: 5 },
-    { name: 'Mubende Town', district: 'Mubende', region: 'Western', distanceKm: 150, baseFee: 25000, perKgFee: 800, estimatedDays: 2 },
-    { name: 'Kyenjojo Town', district: 'Kyenjojo', region: 'Western', distanceKm: 260, baseFee: 32000, perKgFee: 900, estimatedDays: 3 },
+    { name: 'Bundibugyo Town', district: 'Bundibugyo', region: 'Western', distanceKm: 380, baseFee: 40000, perKgFee: 1100, estimatedDays: 4 },
+    { name: 'Kyenjojo Town', district: 'Kyenjojo', region: 'Western', distanceKm: 260, baseFee: 30000, perKgFee: 950, estimatedDays: 3 },
     { name: 'Ibanda Town', district: 'Ibanda', region: 'Western', distanceKm: 290, baseFee: 33000, perKgFee: 1000, estimatedDays: 3 },
     // Northern Region
     { name: 'Gulu City', district: 'Gulu', region: 'Northern', distanceKm: 340, baseFee: 35000, perKgFee: 1000, estimatedDays: 4 },

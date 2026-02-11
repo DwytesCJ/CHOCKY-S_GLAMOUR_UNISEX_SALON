@@ -1,0 +1,244 @@
+{
+  "timestamp": "2026-02-11T15:06:16.080Z",
+  "pages": [
+    {
+      "path": "/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/shop",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/cart",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/checkout",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/wishlist",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/contact",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/faq",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/blog",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/salon",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/rewards",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/account/login",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/account/register",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/account",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/salon/booking",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/products",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/orders",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/appointments",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/customers",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/banners",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/faq",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/testimonials",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/stylists",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/content-blocks",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/admin/settings",
+      "status": 200,
+      "passed": true
+    }
+  ],
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/api/products",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/banners",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/faq",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/testimonials",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/stylists",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/content-blocks",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/rewards/tiers",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/blog",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/products",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/orders",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/banners",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/faq",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/testimonials",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/stylists",
+      "status": 404,
+      "passed": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/content-blocks",
+      "status": 404,
+      "passed": false
+    }
+  ],
+  "summary": {
+    "total": 43,
+    "passed": 34,
+    "failed": 9
+  }
+}

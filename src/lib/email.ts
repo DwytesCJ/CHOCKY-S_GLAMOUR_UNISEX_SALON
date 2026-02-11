@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import prisma from '@/lib/prisma';
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -10,6 +11,28 @@ function getResend() {
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://chockys.com';
+
+// Fetch site settings from database
+async function getSiteSettings() {
+  try {
+    const settings = await prisma.siteSetting.findMany();
+    const settingsMap: Record<string, string> = {};
+    settings.forEach(s => { settingsMap[s.key] = s.value; });
+    return {
+      storeName: settingsMap.storeName || "CHOCKY'S Ultimate Glamour",
+      storeAddress: settingsMap.storeAddress || 'Wandegeya, Kampala',
+      storePhone: settingsMap.storePhone || '+256 703 878 485',
+      storeEmail: settingsMap.storeEmail || 'info@chockys.ug',
+    };
+  } catch {
+    return {
+      storeName: "CHOCKY'S Ultimate Glamour",
+      storeAddress: 'Wandegeya, Kampala',
+      storePhone: '+256 703 878 485',
+      storeEmail: 'info@chockys.ug',
+    };
+  }
+}
 
 interface OrderItem {
   name: string;
@@ -46,6 +69,7 @@ const formatUGX = (amount: number) => `UGX ${amount.toLocaleString()}`;
 // ===================== ORDER EMAILS =====================
 
 export async function sendOrderConfirmation(data: OrderEmailData) {
+  const siteSettings = await getSiteSettings();
   const itemRows = data.items.map(item => 
     `<tr>
       <td style="padding:12px 8px;border-bottom:1px solid #f3f4f6;">${item.name}${item.variant ? ` <small style="color:#9ca3af;">(${item.variant})</small>` : ''}</td>
@@ -129,8 +153,8 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
 
       <!-- Footer -->
       <div style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">CHOCKY'S Ultimate Glamour &middot; Wandegeya, Kampala</p>
-        <p style="margin:0;font-size:12px;color:#9ca3af;">Questions? Reply to this email or call us at +256 XXX XXX XXX</p>
+        <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">${siteSettings.storeName} &middot; ${siteSettings.storeAddress}</p>
+        <p style="margin:0;font-size:12px;color:#9ca3af;">Questions? Reply to this email or call us at ${siteSettings.storePhone}</p>
       </div>
     </div>
   `;
@@ -157,6 +181,7 @@ export async function sendOrderStatusUpdate(data: {
   statusMessage: string;
   trackingNumber?: string;
 }) {
+  const siteSettings = await getSiteSettings();
   const statusColors: Record<string, string> = {
     PROCESSING: '#f59e0b',
     SHIPPED: '#3b82f6',
@@ -197,7 +222,7 @@ export async function sendOrderStatusUpdate(data: {
         </div>
       </div>
       <div style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:13px;color:#6b7280;">CHOCKY'S Ultimate Glamour &middot; Wandegeya, Kampala</p>
+        <p style="margin:0;font-size:13px;color:#6b7280;">${siteSettings.storeName} &middot; ${siteSettings.storeAddress}</p>
       </div>
     </div>
   `;
@@ -219,6 +244,7 @@ export async function sendOrderStatusUpdate(data: {
 // ===================== APPOINTMENT EMAILS =====================
 
 export async function sendAppointmentConfirmation(data: AppointmentEmailData) {
+  const siteSettings = await getSiteSettings();
   const html = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
       <div style="background:linear-gradient(135deg,#e91e63,#d4a574);padding:32px;text-align:center;">
@@ -253,7 +279,7 @@ export async function sendAppointmentConfirmation(data: AppointmentEmailData) {
         </div>
 
         <div style="background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:24px;">
-          <p style="margin:0;font-size:14px;color:#374151;">📍 <strong>Location:</strong> CHOCKY'S Ultimate Glamour, Wandegeya, Kampala</p>
+          <p style="margin:0;font-size:14px;color:#374151;">📍 <strong>Location:</strong> ${siteSettings.storeName}, ${siteSettings.storeAddress}</p>
         </div>
 
         ${data.notes ? `<p style="font-size:14px;color:#6b7280;"><em>Notes: ${data.notes}</em></p>` : ''}
@@ -263,7 +289,7 @@ export async function sendAppointmentConfirmation(data: AppointmentEmailData) {
         </div>
       </div>
       <div style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:13px;color:#6b7280;">Need to reschedule? Contact us at +256 XXX XXX XXX</p>
+        <p style="margin:0;font-size:13px;color:#6b7280;">Need to reschedule? Contact us at ${siteSettings.storePhone}</p>
       </div>
     </div>
   `;
@@ -283,6 +309,7 @@ export async function sendAppointmentConfirmation(data: AppointmentEmailData) {
 }
 
 export async function sendAppointmentReminder(data: AppointmentEmailData) {
+  const siteSettings = await getSiteSettings();
   const html = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
       <div style="background:linear-gradient(135deg,#e91e63,#d4a574);padding:32px;text-align:center;">
@@ -302,7 +329,7 @@ export async function sendAppointmentReminder(data: AppointmentEmailData) {
         </div>
 
         <div style="background:#f9fafb;border-radius:8px;padding:16px;">
-          <p style="margin:0;font-size:14px;color:#374151;">📍 CHOCKY'S Ultimate Glamour, Wandegeya, Kampala</p>
+          <p style="margin:0;font-size:14px;color:#374151;">📍 ${siteSettings.storeName}, ${siteSettings.storeAddress}</p>
         </div>
 
         <div style="text-align:center;margin-top:24px;">
@@ -310,7 +337,7 @@ export async function sendAppointmentReminder(data: AppointmentEmailData) {
         </div>
       </div>
       <div style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:13px;color:#6b7280;">Need to reschedule? Contact us ASAP at +256 XXX XXX XXX</p>
+        <p style="margin:0;font-size:13px;color:#6b7280;">Need to reschedule? Contact us ASAP at ${siteSettings.storePhone}</p>
       </div>
     </div>
   `;
@@ -332,6 +359,7 @@ export async function sendAppointmentReminder(data: AppointmentEmailData) {
 // ===================== WELCOME EMAIL =====================
 
 export async function sendWelcomeEmail(data: { email: string; name: string }) {
+  const siteSettings = await getSiteSettings();
   const html = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
       <div style="background:linear-gradient(135deg,#e91e63,#d4a574);padding:40px 32px;text-align:center;">
@@ -367,7 +395,7 @@ export async function sendWelcomeEmail(data: { email: string; name: string }) {
         <a href="${SITE_URL}/shop" style="display:inline-block;background:#e91e63;color:#ffffff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Start Shopping</a>
       </div>
       <div style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:13px;color:#6b7280;">CHOCKY'S Ultimate Glamour &middot; Wandegeya, Kampala</p>
+        <p style="margin:0;font-size:13px;color:#6b7280;">${siteSettings.storeName} &middot; ${siteSettings.storeAddress}</p>
       </div>
     </div>
   `;
@@ -396,6 +424,7 @@ export async function sendDiscountEmail(data: {
   expiresAt: string;
   message?: string;
 }) {
+  const siteSettings = await getSiteSettings();
   const html = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
       <div style="background:linear-gradient(135deg,#e91e63,#d4a574);padding:32px;text-align:center;">
@@ -421,7 +450,7 @@ export async function sendDiscountEmail(data: {
         <a href="${SITE_URL}/shop" style="display:inline-block;background:#e91e63;color:#ffffff;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;margin-top:16px;">Shop Now</a>
       </div>
       <div style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:13px;color:#6b7280;">CHOCKY'S Ultimate Glamour &middot; Wandegeya, Kampala</p>
+        <p style="margin:0;font-size:13px;color:#6b7280;">${siteSettings.storeName} &middot; ${siteSettings.storeAddress}</p>
       </div>
     </div>
   `;

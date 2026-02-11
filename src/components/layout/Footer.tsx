@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 const footerLinks = {
   shop: [
@@ -34,15 +35,22 @@ const footerLinks = {
   ],
 };
 
-const socialLinks = [
-  { name: 'Facebook', icon: 'fab fa-facebook-f', href: 'https://facebook.com' },
-  { name: 'Instagram', icon: 'fab fa-instagram', href: 'https://instagram.com' },
-  { name: 'Twitter', icon: 'fab fa-twitter', href: 'https://twitter.com' },
-  { name: 'TikTok', icon: 'fab fa-tiktok', href: 'https://tiktok.com' },
-  { name: 'YouTube', icon: 'fab fa-youtube', href: 'https://youtube.com' },
-];
-
 export default function Footer() {
+  const { settings } = useSiteSettings();
+
+  // Build social links from settings
+  const socialLinks = [
+    settings.facebookUrl && { name: 'Facebook', icon: 'fab fa-facebook-f', href: settings.facebookUrl },
+    settings.instagramUrl && { name: 'Instagram', icon: 'fab fa-instagram', href: settings.instagramUrl },
+    settings.twitterUrl && { name: 'Twitter', icon: 'fab fa-twitter', href: settings.twitterUrl },
+    settings.tiktokUrl && { name: 'TikTok', icon: 'fab fa-tiktok', href: settings.tiktokUrl },
+    settings.youtubeUrl && { name: 'YouTube', icon: 'fab fa-youtube', href: settings.youtubeUrl },
+  ].filter(Boolean) as { name: string; icon: string; href: string }[];
+
+  // Format phone for display and links
+  const phoneDisplay = settings.storePhone.replace(/(\+256)(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4');
+  const whatsappNumber = settings.storeWhatsapp.replace(/[^0-9]/g, '');
+
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [newsletterMsg, setNewsletterMsg] = useState('');
@@ -209,24 +217,26 @@ export default function Footer() {
                 <li className="flex items-start gap-3">
                   <i className="fas fa-map-marker-alt text-primary mt-1"></i>
                   <span className="text-gray-400">
-                    Annex Building, Wandegeya,<br />Kampala, Uganda
+                    {settings.storeAddress.split(',').map((part, i) => (
+                      <span key={i}>{part.trim()}{i < settings.storeAddress.split(',').length - 1 && <br />}</span>
+                    ))}
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fas fa-phone text-primary"></i>
-                  <a href="tel:+256703878485" className="text-gray-400 hover:text-primary transition-colors">
-                    +256 703 878 485
+                  <a href={`tel:${settings.storePhone}`} className="text-gray-400 hover:text-primary transition-colors">
+                    {phoneDisplay}
                   </a>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fas fa-envelope text-primary"></i>
-                  <a href="mailto:josephchandin@gmail.com" className="text-gray-400 hover:text-primary transition-colors">
-                    josephchandin@gmail.com
+                  <a href={`mailto:${settings.storeEmail}`} className="text-gray-400 hover:text-primary transition-colors">
+                    {settings.storeEmail}
                   </a>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fab fa-whatsapp text-primary"></i>
-                  <a href="https://wa.me/256703878485" className="text-gray-400 hover:text-primary transition-colors">
+                  <a href={`https://wa.me/${whatsappNumber}`} className="text-gray-400 hover:text-primary transition-colors">
                     WhatsApp Us
                   </a>
                 </li>
@@ -274,7 +284,7 @@ export default function Footer() {
 
       {/* WhatsApp Floating Button */}
       <a
-        href="https://wa.me/256703878485"
+        href={`https://wa.me/${whatsappNumber}`}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all z-50"

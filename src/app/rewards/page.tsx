@@ -1,8 +1,23 @@
-import React from 'react';
-import Image from 'next/image';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const tiers = [
+interface RewardTier {
+  id: string;
+  name: string;
+  slug: string;
+  minPoints: number;
+  maxPoints: number | null;
+  pointsMultiplier: number;
+  benefits: string | null;
+  icon: string | null;
+  color: string | null;
+  isActive: boolean;
+}
+
+// Fallback tiers if API returns empty
+const fallbackTiers = [
   {
     name: 'Bronze',
     spend: 'Free to Join',
@@ -63,7 +78,75 @@ const redeemOptions = [
   { points: 5000, value: 'UGX 500,000 off' },
 ];
 
+// Color mapping for tier names
+const tierColors: Record<string, string> = {
+  'bronze': 'from-amber-600 to-amber-800',
+  'silver': 'from-gray-400 to-gray-600',
+  'gold': 'from-yellow-500 to-yellow-700',
+  'platinum': 'from-purple-500 to-purple-700',
+  'diamond': 'from-cyan-400 to-cyan-600',
+};
+
+// Parse benefits from string (newline or JSON)
+function parseBenefits(benefits: string | null): string[] {
+  if (!benefits) return [];
+  try {
+    const parsed = JSON.parse(benefits);
+    if (Array.isArray(parsed)) return parsed;
+    return [];
+  } catch {
+    // Assume newline-separated
+    return benefits.split('\n').map(b => b.trim()).filter(Boolean);
+  }
+}
+
+// Format spend requirement from minPoints
+function formatSpend(minPoints: number): string {
+  if (minPoints === 0) return 'Free to Join';
+  // Assuming 1 point = UGX 1,000 spent
+  const spend = minPoints * 1000;
+  if (spend >= 1000000) {
+    return `UGX ${(spend / 1000000).toFixed(1)}M+ annually`;
+  }
+  return `UGX ${(spend / 1000).toFixed(0)}K+ annually`;
+}
+
+// Format points multiplier
+function formatPointsRate(multiplier: number): string {
+  return `${multiplier} point${multiplier !== 1 ? 's' : ''} per UGX 1,000`;
+}
+
 export default function RewardsPage() {
+  const [tiers, setTiers] = useState<typeof fallbackTiers>(fallbackTiers);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const res = await fetch('/api/rewards/tiers');
+        const data = await res.json();
+        if (data.success && data.data.length > 0) {
+          // Map API response to display format
+          const mappedTiers = data.data.map((tier: RewardTier) => ({
+            name: tier.name,
+            spend: formatSpend(tier.minPoints),
+            points: formatPointsRate(tier.pointsMultiplier),
+            // Use Tailwind gradient class from tierColors mapping (hex colors from DB don't work as Tailwind classes)
+            color: tierColors[tier.slug.toLowerCase()] || 'from-gray-500 to-gray-700',
+            benefits: parseBenefits(tier.benefits),
+          }));
+          setTiers(mappedTiers);
+        }
+      } catch (error) {
+        console.error('Error fetching reward tiers:', error);
+        // Keep fallback tiers
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTiers();
+  }, []);
+
   return (
     <div className="min-h-screen bg-cream">
       {/* Hero Section */}
@@ -135,29 +218,47 @@ export default function RewardsPage() {
               The more you shop, the more you earn. Climb the tiers and enjoy exclusive perks.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {tiers.map((tier, index) => (
-              <div key={tier.name} className={`bg-white rounded-2xl overflow-hidden shadow-lg ${index === 2 ? 'ring-2 ring-primary' : ''}`}>
-                <div className={`bg-gradient-to-r ${tier.color} p-6 text-white text-center`}>
-                  <h3 className="font-heading text-2xl font-bold mb-1">{tier.name}</h3>
-                  <p className="text-white/80 text-sm">{tier.spend}</p>
-                </div>
-                <div className="p-6">
-                  <div className="text-center mb-6 pb-6 border-b border-gray-100">
-                    <span className="text-3xl font-bold text-primary">{tier.points}</span>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
+                  <div className="h-24 bg-gray-200"></div>
+                  <div className="p-6 space-y-4">
+                    <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                    <div className="space-y-2">
+                      {[...Array(4)].map((_, j) => (
+                        <div key={j} className="h-4 bg-gray-100 rounded"></div>
+                      ))}
+                    </div>
                   </div>
-                  <ul className="space-y-3">
-                    {tier.benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <i className="fas fa-check-circle text-green-500 mt-1"></i>
-                        <span className="text-gray-600 text-sm">{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {tiers.map((tier, index) => (
+                <div key={tier.name} className={`bg-white rounded-2xl overflow-hidden shadow-lg ${index === tiers.length - 1 ? 'ring-2 ring-primary' : ''}`}>
+                  <div className={`bg-gradient-to-r ${tier.color} p-6 text-white text-center`}>
+                    <h3 className="font-heading text-2xl font-bold mb-1">{tier.name}</h3>
+                    <p className="text-white/80 text-sm">{tier.spend}</p>
+                  </div>
+                  <div className="p-6">
+                    <div className="text-center mb-6 pb-6 border-b border-gray-100">
+                      <span className="text-3xl font-bold text-primary">{tier.points}</span>
+                    </div>
+                    <ul className="space-y-3">
+                      {tier.benefits.map((benefit, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <i className="fas fa-check-circle text-green-500 mt-1"></i>
+                          <span className="text-gray-600 text-sm">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

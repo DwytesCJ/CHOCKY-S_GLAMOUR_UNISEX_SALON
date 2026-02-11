@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/context/CartContext";
-import { WishlistProvider } from "@/context/WishlistContext";
-import { ToastProvider } from "@/context/ToastContext";
 import { Providers } from "@/components/Providers";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -58,21 +55,15 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-white text-dark-900 overflow-x-hidden">
         <Providers>
-          <ToastProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1">
-                  {children}
-                </main>
-                <Footer />
-                <CartDrawer />
-                <BackToTop />
-              </div>
-            </WishlistProvider>
-          </CartProvider>
-          </ToastProvider>
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <CartDrawer />
+            <BackToTop />
+          </div>
         </Providers>
       </body>
     </html>

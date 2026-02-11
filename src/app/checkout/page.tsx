@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 interface ShippingZone {
   id: string;
@@ -19,6 +20,7 @@ interface ShippingZone {
 
 export default function CheckoutPage() {
   const { items, totalPrice, totalItems, clearCart } = useCart();
+  const { settings } = useSiteSettings();
   const [step, setStep] = useState(1);
   const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState('');
@@ -497,9 +499,9 @@ export default function CheckoutPage() {
                     <div className="p-4 bg-gray-50 rounded-xl">
                       <h3 className="font-medium mb-2">Pickup Location</h3>
                       <p className="text-sm text-gray-600">
-                        CHOCKY&apos;S Ultimate Glamour<br />
-                        Wandegeya, Kampala<br />
-                        Open: Mon-Sat 9AM-7PM, Sun 10AM-5PM
+                        {settings.storeName}<br />
+                        {settings.storeAddress}<br />
+                        Open: {settings.openingHoursWeekday}, Sun {settings.openingHoursSunday}
                       </p>
                       <p className="text-sm text-green-600 mt-2 font-medium">
                         <i className="fas fa-check-circle mr-1"></i> FREE - No shipping charges
