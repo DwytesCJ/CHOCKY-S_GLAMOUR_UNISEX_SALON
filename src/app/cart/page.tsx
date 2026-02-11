@@ -22,8 +22,8 @@ export default function CartPage() {
 
   const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
 
-  const shipping = totalPrice > freeShipThreshold ? 0 : 10000;
-  const grandTotal = totalPrice + shipping;
+  const isFreeShipping = totalPrice >= freeShipThreshold;
+  const grandTotal = totalPrice; // Shipping calculated at checkout
 
   if (items.length === 0) {
     return (
@@ -174,15 +174,16 @@ export default function CartPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
                   <span className="font-medium">
-                    {shipping === 0 ? (
+                    {isFreeShipping ? (
                       <span className="text-green-600">FREE</span>
                     ) : (
-                      formatPrice(shipping)
+                      <span className="text-gray-500 text-xs">Calculated at checkout</span>
                     )}
                   </span>
                 </div>
-                {shipping > 0 && (
+                {!isFreeShipping && (
                   <p className="text-xs text-gray-500">
+                    <i className="fas fa-info-circle mr-1"></i>
                     Add {formatPrice(freeShipThreshold - totalPrice)} more for free shipping
                   </p>
                 )}

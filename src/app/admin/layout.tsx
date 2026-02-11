@@ -43,17 +43,24 @@ export default function AdminLayout({
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
 
+  // Define allowed admin roles
+  const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'STAFF'];
+  const userRole = session?.user?.role;
+  const isAllowedRole = userRole && allowedRoles.includes(userRole);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/account/login?callbackUrl=/admin');
-    } else if (status === 'authenticated' && session?.user?.role !== 'ADMIN' && session?.user?.role !== 'SUPER_ADMIN') {
-      router.push('/');
+      // Encode the current path for proper redirect after login
+      const currentPath = pathname || '/admin';
+      router.push(`/account/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+    } else if (status === 'authenticated' && !isAllowedRole) {
+      router.push('/account');
     }
-  }, [status, session, router]);
+  }, [status, isAllowedRole, router, pathname]);
 
   // Fetch real notification count from database
   useEffect(() => {
-    if (status === 'authenticated' && (session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN')) {
+    if (status === 'authenticated' && isAllowedRole) {
       const fetchNotifications = async () => {
         try {
           setNotificationsLoading(true);
@@ -89,7 +96,7 @@ export default function AdminLayout({
     );
   }
 
-  if (status === 'unauthenticated' || (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'SUPER_ADMIN')) {
+  if (status === 'unauthenticated' || !isAllowedRole) {
     return null;
   }
 

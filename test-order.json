@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "productId": "cmli8mo0b001011oh25422sxd",
+      "quantity": 1,
+      "price": 185000,
+      "name": "Luxury Perfume Set"
+    }
+  ],
+  "contactInfo": {
+    "email": "test@example.com",
+    "phone": "+256700000000"
+  },
+  "shippingAddress": {
+    "firstName": "Test",
+    "lastName": "User",
+    "address": "123 Test St",
+    "city": "Kampala",
+    "district": "Kampala"
+  },
+  "deliveryMethod": "delivery",
+  "shippingCost": 3000,
+  "paymentMethod": "mobile_money",
+  "mobileProvider": "mtn",
+  "shippingZoneId": "cmlhx94xx002qnny4aiz3isz0"
+}

@@ -80,13 +80,20 @@ export async function POST(request: NextRequest) {
     const {
       items,
       shippingAddressId,
-      billingAddressId,
+      shippingAddress,
+      contactInfo,
       shippingMethod,
+      deliveryMethod,
       shippingCost,
+      shippingZoneId,
       paymentMethod,
       notes,
       couponCode,
+      couponDiscount: clientCouponDiscount,
       useRewardPoints,
+      total: clientTotal,
+      subtotal: clientSubtotal,
+      isFreeShipping,
     } = body;
     
     if (!items || items.length === 0) {
@@ -200,33 +207,100 @@ export async function POST(request: NextRequest) {
     
     // Calculate total
     const total = subtotal - discount - pointsDiscount + (shippingCost || 0) + tax;
-    
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        userId: session?.user?.id as string,
-        addressId: shippingAddressId,
-        status: 'PENDING',
-        subtotal,
-        discountAmount: discount + pointsDiscount,
-        taxAmount: tax,
-        shippingCost: shippingCost || 0,
-        totalAmount: total,
-        shippingMethod: (shippingMethod || 'STANDARD') as any,
-        paymentMethod: (paymentMethod || 'MTN_MOBILE_MONEY') as any,
-        notes,
-        couponCode,
-        items: {
-          create: orderItems,
-        },
-        statusHistory: {
-          create: {
-            status: 'PENDING',
-            note: 'Order placed',
+
+    // Resolve address: use shippingAddressId if provided, or create from shippingAddress object
+    let resolvedAddressId = shippingAddressId || null;
+    if (!resolvedAddressId && shippingAddress && session?.user?.id) {
+      try {
+        const newAddress = await prisma.address.create({
+          data: {
+            userId: session.user.id,
+            type: 'SHIPPING',
+            firstName: shippingAddress.firstName || '',
+            lastName: shippingAddress.lastName || '',
+            phone: contactInfo?.phone || '',
+            addressLine1: shippingAddress.address || '',
+            city: shippingAddress.city || '',
+            district: shippingAddress.district || '',
+            country: 'Uganda',
+            isDefault: true,
           },
+        });
+        resolvedAddressId = newAddress.id;
+      } catch (addrErr) {
+        console.error('Error creating address:', addrErr);
+      }
+    }
+
+    // Resolve shipping method from deliveryMethod
+    const resolvedShippingMethod = deliveryMethod === 'pickup' ? 'STORE_PICKUP' : (shippingMethod || 'STANDARD');
+    
+    // Map payment method from frontend to Prisma enum
+    const mapPaymentMethod = (method: string, provider?: string): string => {
+      if (method === 'mobile_money') {
+        if (provider === 'airtel') return 'AIRTEL_MONEY';
+        return 'MTN_MOBILE_MONEY';
+      }
+      if (method === 'card') return 'CREDIT_CARD';
+      if (method === 'cod') return 'CASH_ON_DELIVERY';
+      return 'MTN_MOBILE_MONEY';
+    };
+
+    // Require authentication - userId is required in schema
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: 'Please sign in to place an order' },
+        { status: 401 }
+      );
+    }
+
+    // Build order data using Prisma relation connect syntax
+    const orderData: any = {
+      orderNumber: generateOrderNumber(),
+      status: 'PENDING',
+      subtotal,
+      discountAmount: discount + pointsDiscount,
+      taxAmount: tax,
+      shippingCost: shippingCost || 0,
+      totalAmount: total,
+      shippingMethod: resolvedShippingMethod as any,
+      paymentMethod: mapPaymentMethod(paymentMethod, body.mobileProvider),
+      notes: notes || null,
+      couponCode: couponCode || null,
+      items: {
+        create: orderItems,
+      },
+      statusHistory: {
+        create: {
+          status: 'PENDING',
+          note: 'Order placed',
         },
       },
+      // Connect user relation (required)
+      user: {
+        connect: { id: session.user.id },
+      },
+    };
+
+    // Connect address relation if resolved
+    if (resolvedAddressId) {
+      orderData.address = { connect: { id: resolvedAddressId } };
+    }
+
+    // Connect shipping zone relation if provided
+    if (shippingZoneId) {
+      orderData.shippingZone = { connect: { id: shippingZoneId } };
+    }
+
+    // Append contact info to notes if provided
+    if (contactInfo?.email || contactInfo?.phone) {
+      const contactNote = `[Contact: ${contactInfo.email || ''}, ${contactInfo.phone || ''}]`;
+      orderData.notes = orderData.notes ? `${orderData.notes}\n${contactNote}` : contactNote;
+    }
+
+    // Create order
+    const order = await prisma.order.create({
+      data: orderData,
       include: {
         items: true,
       },
