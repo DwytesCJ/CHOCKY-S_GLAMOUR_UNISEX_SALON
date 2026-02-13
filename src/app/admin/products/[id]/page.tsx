@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import MultiImageUpload from '@/components/admin/MultiImageUpload';
 
 interface Category {
   id: string;
@@ -17,7 +18,7 @@ export default function EditProductPage() {
   const [fetching, setFetching] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState('');
-  const [imageUrls, setImageUrls] = useState<string[]>(['']);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,8 +82,8 @@ export default function EditProductPage() {
             metaDescription: p.metaDescription || '',
             tags: (p.tags || []).join(', '),
           });
-          const imgs = p.images?.map((img: any) => img.url) || [''];
-          setImageUrls(imgs.length > 0 ? imgs : ['']);
+          const imgs = p.images?.map((img: any) => img.url) || [];
+          setImageUrls(imgs.length > 0 ? imgs : []);
         } else {
           setError('Product not found');
         }
@@ -105,14 +106,6 @@ export default function EditProductPage() {
     }
   };
 
-  const handleImageChange = (index: number, value: string) => {
-    const newUrls = [...imageUrls];
-    newUrls[index] = value;
-    setImageUrls(newUrls);
-  };
-
-  const addImageField = () => setImageUrls(prev => [...prev, '']);
-  const removeImageField = (index: number) => setImageUrls(prev => prev.filter((_, i) => i !== index));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,29 +252,13 @@ export default function EditProductPage() {
         {/* Images */}
         <div className="bg-white rounded-xl shadow-soft p-6">
           <h2 className="text-lg font-semibold mb-4">Images</h2>
-          <div className="space-y-3">
-            {imageUrls.map((url, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="url"
-                  value={url}
-                  onChange={e => handleImageChange(index, e.target.value)}
-                  placeholder="Image URL"
-                  className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-primary text-sm"
-                />
-                {imageUrls.length > 1 && (
-                  <button type="button" onClick={() => removeImageField(index)}
-                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg">
-                    <i className="fas fa-trash"></i>
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={addImageField}
-              className="text-sm text-primary hover:underline">
-              <i className="fas fa-plus mr-1"></i>Add another image
-            </button>
-          </div>
+          <MultiImageUpload
+            values={imageUrls}
+            onChange={setImageUrls}
+            folder="products"
+            label=""
+            maxImages={10}
+          />
         </div>
 
         {/* Flags */}

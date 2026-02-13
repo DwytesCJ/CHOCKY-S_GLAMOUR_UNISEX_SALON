@@ -27,7 +27,12 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const files = formData.getAll('files') as File[];
+    // Support both 'file' (single, from ImageUpload component) and 'files' (multiple)
+    let files = formData.getAll('files') as File[];
+    const singleFile = formData.get('file') as File | null;
+    if (singleFile && files.length === 0) {
+      files = [singleFile];
+    }
     const folder = (formData.get('folder') as string) || 'uploads';
 
     if (!files || files.length === 0) {

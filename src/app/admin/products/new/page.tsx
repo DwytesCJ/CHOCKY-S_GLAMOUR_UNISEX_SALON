@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import MultiImageUpload from '@/components/admin/MultiImageUpload';
 
 interface Category {
   id: string;
@@ -20,7 +21,7 @@ export default function AddProductPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [error, setError] = useState('');
-  const [imageUrls, setImageUrls] = useState<string[]>(['']);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -78,20 +79,6 @@ export default function AddProductPage() {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-  };
-
-  const handleImageChange = (index: number, value: string) => {
-    const newUrls = [...imageUrls];
-    newUrls[index] = value;
-    setImageUrls(newUrls);
-  };
-
-  const addImageField = () => {
-    setImageUrls(prev => [...prev, '']);
-  };
-
-  const removeImageField = (index: number) => {
-    setImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const generateSku = () => {
@@ -267,35 +254,16 @@ export default function AddProductPage() {
           </div>
         </div>
 
-        {/* Images */}
+        {/* Images - Using MultiImageUpload Component */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Product Images</h2>
-          <p className="text-sm text-gray-500 mb-4">Add image URLs. The first image will be the primary image.</p>
-          <div className="space-y-3">
-            {imageUrls.map((url, index) => (
-              <div key={index} className="flex gap-2 items-center">
-                <span className="text-xs text-gray-400 w-6">{index === 0 ? '★' : index + 1}</span>
-                <input type="url" value={url} onChange={(e) => handleImageChange(index, e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                  placeholder={index === 0 ? 'Primary image URL' : 'Additional image URL'} />
-                {imageUrls.length > 1 && (
-                  <button type="button" onClick={() => removeImageField(index)}
-                    className="p-2 text-red-400 hover:text-red-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={addImageField}
-              className="text-sm text-pink-500 hover:text-pink-600 flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add another image
-            </button>
-          </div>
+          <MultiImageUpload
+            values={imageUrls}
+            onChange={setImageUrls}
+            folder="products"
+            label=""
+            maxImages={10}
+          />
         </div>
 
         {/* Flags & Toggles */}
