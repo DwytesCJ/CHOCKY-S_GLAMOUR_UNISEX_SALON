@@ -287,10 +287,10 @@ export default function Header() {
                           </div>
                         ))}
                         <div className="col-span-4 mt-2 pt-4 border-t border-gray-100 flex items-center justify-between">
-                          <Link href="/shop" className="text-primary text-sm font-medium hover:underline">
+                          <Link href="/shop" className="text-primary text-sm font-medium hover:underline" onClick={() => setActiveMenu(null)}>
                             View All Products <i className="fas fa-arrow-right ml-1 text-xs"></i>
                           </Link>
-                          <Link href="/shop?sale=true" className="text-sm text-rose-gold font-medium">
+                          <Link href="/shop?sale=true" className="text-sm text-rose-gold font-medium hover:underline" onClick={() => setActiveMenu(null)}>
                             <i className="fas fa-fire mr-1"></i> Hot Deals
                           </Link>
                         </div>
@@ -433,6 +433,14 @@ export default function Header() {
                   {item.name}
                 </Link>
               ))}
+              <Link
+                href="/shop?sale=true"
+                className="py-3 px-4 hover:bg-gray-50 rounded-lg transition-colors font-medium flex items-center gap-3 text-rose-gold"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-fire"></i>
+                Hot Deals
+              </Link>
               <hr className="my-2" />
               <Link
                 href="/track"

@@ -66,12 +66,15 @@ export async function POST(request: NextRequest) {
 
     // Calculate discount
     let discount = 0;
-    if (coupon.discountType === 'PERCENTAGE') {
+    if (coupon.discountType === 'FREE_SHIPPING') {
+      discount = 0; // No monetary discount, shipping is zeroed on frontend
+    } else if (coupon.discountType === 'PERCENTAGE') {
       discount = Math.round((orderTotal * Number(coupon.discountValue)) / 100);
       if (coupon.maxDiscountAmount) {
         discount = Math.min(discount, Number(coupon.maxDiscountAmount));
       }
     } else {
+      // FIXED_AMOUNT
       discount = Math.min(Number(coupon.discountValue), orderTotal);
     }
 
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         type: coupon.discountType,
         value: Number(coupon.discountValue),
         discount,
+        freeShipping: coupon.discountType === 'FREE_SHIPPING',
         description: coupon.description,
       },
     });

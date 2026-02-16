@@ -38,7 +38,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedCart = localStorage.getItem('chockys-cart');
     if (savedCart) {
-      setItems(JSON.parse(savedCart));
+      try {
+        const parsed = JSON.parse(savedCart);
+        // Ensure prices are numbers (localStorage may store as strings)
+        const normalized = parsed.map((item: any) => ({
+          ...item,
+          price: Number(item.price) || 0,
+          originalPrice: item.originalPrice ? Number(item.originalPrice) : undefined,
+          quantity: Number(item.quantity) || 1,
+        }));
+        setItems(normalized);
+      } catch {
+        setItems([]);
+      }
     }
   }, []);
 
@@ -93,7 +105,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
 
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);

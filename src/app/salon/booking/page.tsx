@@ -1,28 +1,48 @@
 "use client";
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
-const services = [
-  { id: 1, name: 'Hair Styling', price: 50000, duration: 60, category: 'Hair' },
-  { id: 2, name: 'Hair Coloring', price: 150000, duration: 150, category: 'Hair' },
-  { id: 3, name: 'Wig Installation', price: 80000, duration: 90, category: 'Hair' },
-  { id: 4, name: 'Braiding & Plaiting', price: 100000, duration: 240, category: 'Hair' },
-  { id: 5, name: 'Hair Treatment', price: 70000, duration: 60, category: 'Hair' },
-  { id: 6, name: 'Bridal Makeup', price: 250000, duration: 120, category: 'Makeup' },
-  { id: 7, name: 'Event Makeup', price: 100000, duration: 60, category: 'Makeup' },
-  { id: 8, name: 'Photoshoot Makeup', price: 150000, duration: 90, category: 'Makeup' },
-  { id: 9, name: 'Classic Facial', price: 80000, duration: 60, category: 'Skin' },
-  { id: 10, name: 'Anti-Aging Facial', price: 120000, duration: 90, category: 'Skin' },
+interface SalonService {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+  category?: { id: string; name: string };
+  categoryId?: string;
+  description?: string;
+}
+
+interface Stylist {
+  id: string;
+  name: string;
+  specialty: string;
+  image: string;
+  bio?: string;
+}
+
+// Fallback data if API fails
+const fallbackServices: SalonService[] = [
+  { id: 'fb1', name: 'Hair Styling', price: 50000, duration: 60, category: { id: 'c1', name: 'Hair' } },
+  { id: 'fb2', name: 'Hair Coloring', price: 150000, duration: 150, category: { id: 'c1', name: 'Hair' } },
+  { id: 'fb3', name: 'Wig Installation', price: 80000, duration: 90, category: { id: 'c1', name: 'Hair' } },
+  { id: 'fb4', name: 'Braiding & Plaiting', price: 100000, duration: 240, category: { id: 'c1', name: 'Hair' } },
+  { id: 'fb5', name: 'Hair Treatment', price: 70000, duration: 60, category: { id: 'c1', name: 'Hair' } },
+  { id: 'fb6', name: 'Bridal Makeup', price: 250000, duration: 120, category: { id: 'c2', name: 'Makeup' } },
+  { id: 'fb7', name: 'Event Makeup', price: 100000, duration: 60, category: { id: 'c2', name: 'Makeup' } },
+  { id: 'fb8', name: 'Photoshoot Makeup', price: 150000, duration: 90, category: { id: 'c2', name: 'Makeup' } },
+  { id: 'fb9', name: 'Classic Facial', price: 80000, duration: 60, category: { id: 'c3', name: 'Skin' } },
+  { id: 'fb10', name: 'Anti-Aging Facial', price: 120000, duration: 90, category: { id: 'c3', name: 'Skin' } },
 ];
 
-const stylists = [
-  { id: 1, name: 'Grace Nakamya', specialty: 'Hair', image: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg' },
-  { id: 2, name: 'Sarah Achieng', specialty: 'Makeup', image: '/uploads/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg' },
-  { id: 3, name: 'Amina Hassan', specialty: 'Skin', image: '/uploads/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg' },
-  { id: 4, name: 'Joy Namubiru', specialty: 'Hair', image: '/uploads/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg' },
+const fallbackStylists: Stylist[] = [
+  { id: 'fs1', name: 'Grace Nakamya', specialty: 'Hair', image: '/uploads/team/SnapInsta.to_623791606_18078416906580404_8628629081906127485_n.jpg' },
+  { id: 'fs2', name: 'Sarah Achieng', specialty: 'Makeup', image: '/uploads/team/SnapInsta.to_624543554_18078416900580404_729626818934809874_n.jpg' },
+  { id: 'fs3', name: 'Amina Hassan', specialty: 'Skin', image: '/uploads/team/SnapInsta.to_625048011_18078416870580404_5424531763907010008_n.jpg' },
+  { id: 'fs4', name: 'Joy Namubiru', specialty: 'Hair', image: '/uploads/team/SnapInsta.to_625048531_18078416903580404_2925058900756321713_n.jpg' },
 ];
 
 const timeSlots = [
@@ -31,15 +51,24 @@ const timeSlots = [
   '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
 ];
 
+function convertTimeTo24(time12: string): string {
+  const [time, modifier] = time12.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  if (modifier === 'PM' && hours !== 12) hours += 12;
+  if (modifier === 'AM' && hours === 12) hours = 0;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
 function BookingContent() {
   const searchParams = useSearchParams();
   const preselectedService = searchParams.get('service');
+  const { data: session, status: authStatus } = useSession();
 
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState<number | null>(
-    preselectedService ? services.find(s => s.name === preselectedService)?.id || null : null
-  );
-  const [selectedStylist, setSelectedStylist] = useState<number | null>(null);
+  const [services, setServices] = useState<SalonService[]>(fallbackServices);
+  const [stylistsList, setStylistsList] = useState<Stylist[]>(fallbackStylists);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedStylist, setSelectedStylist] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [formData, setFormData] = useState({
@@ -49,15 +78,85 @@ function BookingContent() {
     phone: '',
     notes: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [appointmentNumber, setAppointmentNumber] = useState('');
+  const [loadingServices, setLoadingServices] = useState(true);
 
-  const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
+  // Fetch services from API
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [servicesRes, stylistsRes] = await Promise.all([
+          fetch('/api/salon/services'),
+          fetch('/api/stylists'),
+        ]);
+        const servicesData = await servicesRes.json();
+        const stylistsData = await stylistsRes.json();
+
+        if (servicesData.success && servicesData.data?.length > 0) {
+          const mapped = servicesData.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            price: Number(s.price),
+            duration: s.duration,
+            category: s.category || { id: '', name: '' },
+            description: s.description,
+          }));
+          setServices(mapped);
+          // Pre-select if query param matches
+          if (preselectedService) {
+            const match = mapped.find((s: SalonService) => s.name === preselectedService);
+            if (match) setSelectedService(match.id);
+          }
+        } else if (preselectedService) {
+          const match = fallbackServices.find(s => s.name === preselectedService);
+          if (match) setSelectedService(match.id);
+        }
+
+        if (stylistsData.success && stylistsData.data?.length > 0) {
+          setStylistsList(stylistsData.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            specialty: s.specialty || s.specialization || '',
+            image: s.image || s.avatar || '/images/placeholder.jpg',
+            bio: s.bio,
+          })));
+        }
+      } catch {
+        // Use fallback data
+        if (preselectedService) {
+          const match = fallbackServices.find(s => s.name === preselectedService);
+          if (match) setSelectedService(match.id);
+        }
+      } finally {
+        setLoadingServices(false);
+      }
+    }
+    fetchData();
+  }, [preselectedService]);
+
+  // Auto-fill form data from session when user is logged in
+  useEffect(() => {
+    if (authStatus === 'authenticated' && session?.user) {
+      const user = session.user as any;
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || user.name?.split(' ')[0] || prev.firstName,
+        lastName: user.lastName || user.name?.split(' ').slice(1).join(' ') || prev.lastName,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    }
+  }, [authStatus, session]);
+
+  const formatPrice = (price: number) => `UGX ${Number(price).toLocaleString()}`;
   const formatDuration = (mins: number) => {
     const hours = Math.floor(mins / 60);
     const minutes = mins % 60;
     return hours > 0 ? `${hours}h ${minutes > 0 ? `${minutes}m` : ''}` : `${minutes}m`;
   };
 
-  // Generate next 14 days
   const getAvailableDates = () => {
     const dates = [];
     const today = new Date();
@@ -70,18 +169,53 @@ function BookingContent() {
   };
 
   const availableDates = getAvailableDates();
-
   const selectedServiceData = services.find(s => s.id === selectedService);
-  const selectedStylistData = stylists.find(s => s.id === selectedStylist);
+  const selectedStylistData = stylistsList.find(s => s.id === selectedStylist);
+  const categoryName = selectedServiceData?.category?.name || '';
 
-  const filteredStylists = selectedServiceData
-    ? stylists.filter(s => s.specialty === selectedServiceData.category || s.specialty === 'All')
-    : stylists;
+  const filteredStylists = categoryName
+    ? stylistsList.filter(s => s.specialty.toLowerCase().includes(categoryName.toLowerCase()) || s.specialty === 'All')
+    : stylistsList;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In real app, submit to API
-    setStep(5); // Show confirmation
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const time24 = convertTimeTo24(selectedTime);
+      const payload: any = {
+        serviceId: selectedService,
+        date: selectedDate,
+        appointmentTime: time24,
+        notes: formData.notes,
+        contactName: `${formData.firstName} ${formData.lastName}`,
+        contactEmail: formData.email,
+        contactPhone: formData.phone,
+      };
+      if (selectedStylist && selectedStylist !== 'none') {
+        payload.stylistId = selectedStylist;
+      }
+
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setAppointmentNumber(data.data?.appointmentNumber || '');
+        setStep(5);
+      } else {
+        setSubmitError(data.error || 'Failed to book appointment. Please try again.');
+      }
+    } catch {
+      setSubmitError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canProceed = () => {
@@ -93,6 +227,8 @@ function BookingContent() {
       default: return false;
     }
   };
+
+  const isLoggedIn = authStatus === 'authenticated';
 
   return (
     <div className="min-h-screen bg-cream">
@@ -107,6 +243,12 @@ function BookingContent() {
             <span>Book Appointment</span>
           </nav>
           <h1 className="font-heading text-3xl md:text-4xl font-bold">Book Your Appointment</h1>
+          {isLoggedIn && (
+            <p className="text-gray-300 mt-2">
+              <i className="fas fa-check-circle text-green-400 mr-2"></i>
+              Signed in as {session?.user?.name || session?.user?.email}
+            </p>
+          )}
         </div>
       </div>
 
@@ -145,35 +287,46 @@ function BookingContent() {
           {step === 1 && (
             <div className="bg-white rounded-xl p-6 shadow-soft">
               <h2 className="font-heading text-xl font-semibold mb-6">Select a Service</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {services.map((service) => (
-                  <button
-                    key={service.id}
-                    onClick={() => setSelectedService(service.id)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      selectedService === service.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{service.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                          <i className="far fa-clock mr-1"></i>
-                          {formatDuration(service.duration)}
-                        </p>
+              {loadingServices ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {services.map((service) => (
+                    <button
+                      key={service.id}
+                      onClick={() => setSelectedService(service.id)}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        selectedService === service.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium">{service.name}</h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            <i className="far fa-clock mr-1"></i>
+                            {formatDuration(service.duration)}
+                          </p>
+                          {service.category?.name && (
+                            <span className="inline-block mt-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              {service.category.name}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-primary font-semibold">{formatPrice(service.price)}</span>
                       </div>
-                      <span className="text-primary font-semibold">{formatPrice(service.price)}</span>
-                    </div>
-                    {selectedService === service.id && (
-                      <div className="mt-2 text-primary text-sm">
-                        <i className="fas fa-check-circle mr-1"></i> Selected
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+                      {selectedService === service.id && (
+                        <div className="mt-2 text-primary text-sm">
+                          <i className="fas fa-check-circle mr-1"></i> Selected
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -198,6 +351,7 @@ function BookingContent() {
                         alt={stylist.name}
                         fill
                         className="object-cover"
+                        sizes="80px"
                       />
                     </div>
                     <h3 className="font-medium text-sm">{stylist.name}</h3>
@@ -211,9 +365,9 @@ function BookingContent() {
                 ))}
               </div>
               <button
-                onClick={() => setSelectedStylist(0)}
+                onClick={() => setSelectedStylist('none')}
                 className={`mt-4 w-full p-4 rounded-xl border-2 text-center transition-all ${
-                  selectedStylist === 0
+                  selectedStylist === 'none'
                     ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
@@ -229,7 +383,6 @@ function BookingContent() {
             <div className="bg-white rounded-xl p-6 shadow-soft">
               <h2 className="font-heading text-xl font-semibold mb-6">Select Date & Time</h2>
               
-              {/* Date Selection */}
               <div className="mb-8">
                 <h3 className="font-medium mb-4">Choose a Date</h3>
                 <div className="flex gap-3 overflow-x-auto pb-4">
@@ -258,7 +411,6 @@ function BookingContent() {
                 </div>
               </div>
 
-              {/* Time Selection */}
               {selectedDate && (
                 <div>
                   <h3 className="font-medium mb-4">Choose a Time</h3>
@@ -282,10 +434,21 @@ function BookingContent() {
             </div>
           )}
 
-          {/* Step 4: Personal Details */}
+          {/* Step 4: Personal Details - Auto-filled if logged in */}
           {step === 4 && (
             <div className="bg-white rounded-xl p-6 shadow-soft">
               <h2 className="font-heading text-xl font-semibold mb-6">Your Details</h2>
+              
+              {isLoggedIn && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <i className="fas fa-check-circle"></i>
+                    <span className="font-medium">Signed in as {session?.user?.name || session?.user?.email}</span>
+                  </div>
+                  <p className="text-green-600 text-sm mt-1">Your details have been auto-filled from your account.</p>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -343,6 +506,21 @@ function BookingContent() {
                   ></textarea>
                 </div>
               </form>
+
+              {submitError && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+                  <i className="fas fa-exclamation-circle mr-2"></i>{submitError}
+                </div>
+              )}
+
+              {!isLoggedIn && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-blue-700 text-sm">
+                    <i className="fas fa-info-circle mr-2"></i>
+                    <Link href="/account/login" className="font-medium underline">Sign in</Link> to auto-fill your details and view your appointments later.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -353,6 +531,11 @@ function BookingContent() {
                 <i className="fas fa-check text-4xl text-green-500"></i>
               </div>
               <h2 className="font-heading text-2xl font-bold mb-2">Booking Confirmed!</h2>
+              {appointmentNumber && (
+                <p className="text-lg font-medium text-primary mb-2">
+                  Appointment #{appointmentNumber}
+                </p>
+              )}
               <p className="text-gray-600 mb-6">
                 Your appointment has been successfully booked. We&apos;ve sent a confirmation to your email and phone.
               </p>
@@ -370,11 +553,15 @@ function BookingContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Date:</span>
-                    <span className="font-medium">{new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <span className="font-medium">{selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Time:</span>
                     <span className="font-medium">{selectedTime}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Customer:</span>
+                    <span className="font-medium">{formData.firstName} {formData.lastName}</span>
                   </div>
                   <div className="flex justify-between pt-3 border-t border-gray-200">
                     <span className="text-gray-500">Total:</span>
@@ -387,7 +574,8 @@ function BookingContent() {
                 <Link href="/salon" className="btn btn-outline">
                   Back to Salon
                 </Link>
-                <Link href="/account/appointments" className="btn btn-primary">
+                <Link href="/account" className="btn btn-primary">
+                  <i className="fas fa-calendar-check mr-2"></i>
                   View My Appointments
                 </Link>
               </div>
@@ -406,12 +594,27 @@ function BookingContent() {
                 Back
               </button>
               <button
-                onClick={() => step === 4 ? handleSubmit(new Event('submit') as unknown as React.FormEvent) : setStep(step + 1)}
-                disabled={!canProceed()}
+                onClick={() => {
+                  if (step === 4) {
+                    handleSubmit();
+                  } else {
+                    setStep(step + 1);
+                  }
+                }}
+                disabled={!canProceed() || isSubmitting}
                 className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {step === 4 ? 'Confirm Booking' : 'Continue'}
-                <i className="fas fa-arrow-right ml-2"></i>
+                {isSubmitting ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    Booking...
+                  </>
+                ) : (
+                  <>
+                    {step === 4 ? 'Confirm Booking' : 'Continue'}
+                    <i className="fas fa-arrow-right ml-2"></i>
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -425,7 +628,7 @@ function BookingContent() {
                   <span className="text-gray-500">Service:</span>
                   <span className="font-medium">{selectedServiceData?.name}</span>
                 </div>
-                {selectedStylist !== null && (
+                {selectedStylist && selectedStylist !== 'none' && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Stylist:</span>
                     <span className="font-medium">{selectedStylistData?.name || 'First Available'}</span>
@@ -434,7 +637,7 @@ function BookingContent() {
                 {selectedDate && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Date:</span>
-                    <span className="font-medium">{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span className="font-medium">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                 )}
                 {selectedTime && (
@@ -462,7 +665,7 @@ function BookingContent() {
 
 export default function BookingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-cream flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-cream flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>}>
       <BookingContent />
     </Suspense>
   );

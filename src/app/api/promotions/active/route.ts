@@ -68,6 +68,7 @@ export async function GET() {
         type: promo.type,
         discountPct: promo.discountPct,
         endDate: promo.endDate.toISOString(),
+        productIds: ids,
         products: promoProducts,
       };
     });

@@ -62,10 +62,19 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState('');
+  const [couponType, setCouponType] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
+  // Promotion discounts
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoLabel, setPromoLabel] = useState('');
+  // Points redemption
+  const [userPoints, setUserPoints] = useState(0);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const [pointsDiscount, setPointsDiscount] = useState(0);
+  const [pointsValueRate, setPointsValueRate] = useState(10); // 1 point = 10 UGX default
 
   useEffect(() => {
     fetch('/api/shipping/zones')
@@ -83,9 +92,60 @@ export default function CheckoutPage() {
         if (data.success && data.data?.freeShippingThreshold) {
           setFreeShipThreshold(parseInt(data.data.freeShippingThreshold));
         }
+        if (data.success && data.data?.pointsValueRate) {
+          setPointsValueRate(parseInt(data.data.pointsValueRate) || 10);
+        }
       })
       .catch(() => {});
   }, []);
+
+  // Fetch user points if authenticated
+  useEffect(() => {
+    if (authStatus === 'authenticated') {
+      fetch('/api/rewards/points')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUserPoints(data.data?.totalPoints || 0);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [authStatus]);
+
+  // Fetch active promotions and calculate promo discount
+  useEffect(() => {
+    if (items.length === 0) return;
+    fetch('/api/promotions/active')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.length > 0) {
+          let totalPromoDiscount = 0;
+          const promoNames: string[] = [];
+          const cartProductIds = items.map(i => i.id);
+          
+          for (const promo of data.data) {
+            const promoProductIds = promo.productIds || [];
+            const matchingItems = items.filter(item => promoProductIds.includes(item.id));
+            
+            if (matchingItems.length > 0) {
+              const discountPct = promo.discountPct || 0;
+              for (const item of matchingItems) {
+                const itemTotal = Number(item.price) * Number(item.quantity);
+                totalPromoDiscount += Math.round((itemTotal * discountPct) / 100);
+              }
+              promoNames.push(promo.name);
+            }
+          }
+          
+          if (totalPromoDiscount > 0) {
+            setPromoDiscount(totalPromoDiscount);
+            setPromoLabel(promoNames.join(', '));
+          }
+        }
+      })
+      .catch(() => {});
+  }, [items]);
 
   useEffect(() => {
     if (authStatus === 'loading') return;
@@ -105,9 +165,18 @@ export default function CheckoutPage() {
   }, [authStatus, session, sessionLoaded]);
 
   const selectedZone = shippingZones.find(z => z.id === selectedZoneId);
-  const isFreeShipping = totalPrice >= freeShipThreshold;
-  const shipping = formData.deliveryMethod === 'pickup' ? 0 : isFreeShipping ? 0 : (selectedZone?.baseFee || 0);
-  const grandTotal = Math.max(0, totalPrice + shipping - couponDiscount);
+  const isFreeShipping = Number(totalPrice) >= Number(freeShipThreshold) || couponType === 'FREE_SHIPPING';
+  const shipping = formData.deliveryMethod === 'pickup' ? 0 : isFreeShipping ? 0 : Number(selectedZone?.baseFee || 0);
+  const totalDiscount = Number(couponDiscount) + Number(promoDiscount) + Number(pointsDiscount);
+  const grandTotal = Math.max(0, Number(totalPrice) + Number(shipping) - totalDiscount);
+
+  // Handle points redemption
+  const handlePointsChange = (value: number) => {
+    const maxRedeemable = Math.min(userPoints, Math.floor(Number(totalPrice) / pointsValueRate));
+    const pts = Math.max(0, Math.min(value, maxRedeemable));
+    setPointsToRedeem(pts);
+    setPointsDiscount(pts * pointsValueRate);
+  };
 
   const groupedZones = useMemo(() => {
     const filtered = shippingZones.filter(z =>
@@ -121,7 +190,7 @@ export default function CheckoutPage() {
     }, {} as Record<string, ShippingZone[]>);
   }, [shippingZones, zoneSearch]);
 
-  const formatPrice = (price: number) => `UGX ${price.toLocaleString()}`;
+  const formatPrice = (price: number | string) => `UGX ${Number(price).toLocaleString()}`;
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -135,8 +204,9 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setCouponDiscount(data.data.discount);
+        setCouponDiscount(data.data.discount || 0);
         setCouponApplied(data.data.code);
+        setCouponType(data.data.type || '');
       } else {
         setCouponError(data.error || 'Invalid coupon');
         setCouponDiscount(0);
@@ -153,6 +223,7 @@ export default function CheckoutPage() {
     setCouponCode('');
     setCouponDiscount(0);
     setCouponApplied('');
+    setCouponType('');
     setCouponError('');
   };
 
@@ -192,6 +263,9 @@ export default function CheckoutPage() {
           subtotal: totalPrice,
           couponCode: couponApplied || undefined,
           couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
+          promoDiscount: promoDiscount > 0 ? promoDiscount : undefined,
+          pointsRedeemed: pointsToRedeem > 0 ? pointsToRedeem : undefined,
+          pointsDiscount: pointsDiscount > 0 ? pointsDiscount : undefined,
           total: grandTotal,
           paymentMethod: mappedPaymentMethod,
           mobileNumber: formData.paymentMethod === 'mobile_money' ? formData.mobileNumber : undefined,
@@ -502,7 +576,7 @@ export default function CheckoutPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.name}</p>
                       {item.variant && <p className="text-xs text-gray-500">{item.variant}</p>}
-                      <p className="text-sm text-primary font-medium">{formatPrice(item.price * item.quantity)}</p>
+                      <p className="text-sm text-primary font-medium">{formatPrice(Number(item.price) * Number(item.quantity))}</p>
                     </div>
                   </div>
                 ))}
@@ -514,9 +588,49 @@ export default function CheckoutPage() {
                   <span className="font-medium">{shipping === 0 ? <span className="text-green-600">FREE</span> : formatPrice(shipping)}</span>
                 </div>
                 {couponDiscount > 0 && (
-                  <div className="flex justify-between text-green-600"><span>Discount ({couponApplied})</span><span>-{formatPrice(couponDiscount)}</span></div>
+                  <div className="flex justify-between text-green-600"><span>Coupon ({couponApplied})</span><span>-{formatPrice(couponDiscount)}</span></div>
+                )}
+                {couponType === 'FREE_SHIPPING' && (
+                  <div className="flex justify-between text-green-600"><span>Free Shipping ({couponApplied})</span><span>Applied</span></div>
+                )}
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-green-600"><span>Promo ({promoLabel})</span><span>-{formatPrice(promoDiscount)}</span></div>
+                )}
+                {pointsDiscount > 0 && (
+                  <div className="flex justify-between text-purple-600"><span>Points ({pointsToRedeem} pts)</span><span>-{formatPrice(pointsDiscount)}</span></div>
                 )}
               </div>
+              {/* Points Redemption */}
+              {authStatus === 'authenticated' && userPoints > 0 && (
+                <div className="border-t border-gray-100 mt-4 pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium"><i className="fas fa-star text-yellow-500 mr-1"></i>Reward Points</span>
+                    <span className="text-xs text-gray-500">{userPoints} pts available</span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.min(userPoints, Math.floor(Number(totalPrice) / pointsValueRate))}
+                      value={pointsToRedeem}
+                      onChange={e => handlePointsChange(parseInt(e.target.value) || 0)}
+                      className="w-24 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-primary"
+                      placeholder="0"
+                    />
+                    <span className="text-xs text-gray-500">= {formatPrice(pointsToRedeem * pointsValueRate)} off</span>
+                    {pointsToRedeem > 0 && (
+                      <button type="button" onClick={() => handlePointsChange(0)} className="text-red-400 hover:text-red-600 text-xs ml-auto">Clear</button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePointsChange(Math.min(userPoints, Math.floor(Number(totalPrice) / pointsValueRate)))}
+                    className="text-xs text-primary hover:underline mt-1"
+                  >
+                    Use max points
+                  </button>
+                </div>
+              )}
               <div className="border-t border-gray-100 mt-4 pt-4">
                 {couponApplied ? (
                   <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg mb-4">

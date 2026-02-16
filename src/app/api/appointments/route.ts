@@ -93,7 +93,15 @@ export async function POST(request: NextRequest) {
       customerName,
       customerEmail,
       customerPhone,
+      contactName,
+      contactEmail,
+      contactPhone,
     } = body;
+
+    // Support both field naming conventions
+    const finalName = contactName || customerName || '';
+    const finalEmail = contactEmail || customerEmail || '';
+    const finalPhone = contactPhone || customerPhone || '';
     
     // Validate required fields
     if (!serviceId || !date || !appointmentTime) {
@@ -140,40 +148,58 @@ export async function POST(request: NextRequest) {
     const endTime = new Date(dateTime);
     endTime.setMinutes(endTime.getMinutes() + service.duration);
     
+    // Build appointment data
+    const appointmentData: any = {
+      appointmentNumber: generateAppointmentNumber(),
+      serviceId,
+      date: dateTime,
+      startTime: appointmentTime,
+      endTime: `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`,
+      totalAmount: Number(service.price),
+      status: 'PENDING',
+      notes: notes || '',
+      contactName: finalName,
+      contactEmail: finalEmail,
+      contactPhone: finalPhone,
+    };
+
+    // Link to user if authenticated
+    if (session?.user?.id) {
+      appointmentData.userId = session.user.id;
+    }
+
+    // Only set stylistId if it's a valid value (not 'none')
+    if (stylistId && stylistId !== 'none') {
+      appointmentData.stylistId = stylistId;
+    }
+
     // Create appointment
     const appointment = await prisma.appointment.create({
-      data: {
-        appointmentNumber: generateAppointmentNumber(),
-        userId: session?.user?.id as string,
-        serviceId,
-        stylistId,
-        date: dateTime,
-        startTime: appointmentTime,
-        endTime: `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`,
-        totalAmount: Number(service.price),
-        status: 'PENDING',
-        notes,
-      },
+      data: appointmentData,
       include: {
         service: true,
         stylist: true,
       },
     });
     
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId: session?.user?.id,
-        action: 'APPOINTMENT_CREATED',
-        entity: 'appointment',
-        entityId: appointment.id,
-        details: JSON.stringify({
-          appointmentNumber: appointment.appointmentNumber,
-          service: service.name,
-          date: dateTime.toISOString(),
-        }),
-      },
-    });
+    // Log activity (only if user is authenticated)
+    if (session?.user?.id) {
+      try {
+        await prisma.activityLog.create({
+          data: {
+            userId: session.user.id,
+            action: 'APPOINTMENT_CREATED',
+            entity: 'appointment',
+            entityId: appointment.id,
+            details: JSON.stringify({
+              appointmentNumber: appointment.appointmentNumber,
+              service: service.name,
+              date: dateTime.toISOString(),
+            }),
+          },
+        });
+      } catch { /* ignore activity log errors */ }
+    }
     
     // TODO: Send confirmation email/SMS
     
