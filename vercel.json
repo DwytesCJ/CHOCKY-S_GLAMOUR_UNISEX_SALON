@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/appointment-reminders",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/expire-points",
+      "schedule": "0 2 * * *"
     }
   ]
 }

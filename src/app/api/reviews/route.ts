@@ -172,16 +172,38 @@ export async function POST(request: NextRequest) {
     // Update product rating cache - removed as Product model doesn't have averageRating field
     // Rating is calculated dynamically from reviews when needed
     
-    // Award points for review
+    // Award points for review (dynamic from admin settings)
     if (session.user.id) {
-      await prisma.rewardPoint.create({
-        data: {
-          userId: session.user.id,
-          points: 10,
-          type: 'EARNED_REVIEW',
-          description: `Review for ${product.name}`,
-        },
-      });
+      try {
+        let reviewPoints = 10; // default
+        let pointsExpiryDays = 365;
+        try {
+          const settings = await prisma.siteSetting.findMany({
+            where: { key: { in: ['pointsPerReview', 'pointsExpiryDays'] } },
+          });
+          for (const s of settings) {
+            if (s.key === 'pointsPerReview') reviewPoints = parseInt(s.value) || 10;
+            if (s.key === 'pointsExpiryDays') pointsExpiryDays = parseInt(s.value) || 365;
+          }
+        } catch {}
+        
+        if (reviewPoints > 0) {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + pointsExpiryDays);
+          
+          await prisma.rewardPoint.create({
+            data: {
+              userId: session.user.id,
+              points: reviewPoints,
+              type: 'EARNED_REVIEW',
+              description: `Review for ${product.name}`,
+              expiresAt,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Error awarding review points:', e);
+      }
     }
     
     return NextResponse.json({

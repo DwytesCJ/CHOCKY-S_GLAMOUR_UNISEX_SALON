@@ -14,23 +14,28 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Get user with reward points
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        rewardPoints: {
-          orderBy: { createdAt: 'desc' },
-          take: 20, // Last 20 transactions
-        },
-      },
+    // Get ALL user reward points for accurate total
+    const allPoints = await prisma.rewardPoint.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
     });
 
-    if (!user) {
+    if (!allPoints) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    // Calculate total points
-    const totalPoints = user.rewardPoints.reduce((sum, rp) => sum + rp.points, 0);
+    // Calculate total points (exclude expired positive points)
+    const now = new Date();
+    const totalPoints = allPoints.reduce((sum: number, rp: any) => {
+      // Skip expired earned points (positive points with past expiresAt)
+      if (rp.points > 0 && rp.expiresAt && new Date(rp.expiresAt) < now) {
+        return sum;
+      }
+      return sum + rp.points;
+    }, 0);
+
+    // Last 20 for history display
+    const recentPoints = allPoints.slice(0, 20);
 
     // Get all tiers to determine user's current tier
     const tiers = await prisma.rewardTier.findMany({
@@ -50,11 +55,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get points value rate from settings
+    let pointsValueRate = 10; // default: 1 point = 10 UGX
+    let pointsPerPurchase = 1; // default: 1 point per 1000 UGX
+    try {
+      const settings = await prisma.siteSetting.findMany({
+        where: { key: { in: ['pointsValueRate', 'pointsPerPurchase', 'rewardPointsPerUGX'] } },
+      });
+      for (const s of settings) {
+        if (s.key === 'pointsValueRate') pointsValueRate = parseInt(s.value) || 10;
+        if (s.key === 'pointsPerPurchase' || s.key === 'rewardPointsPerUGX') pointsPerPurchase = parseInt(s.value) || 1;
+      }
+    } catch {}
+
     // Calculate points to next tier
     const pointsToNextTier = nextTier ? nextTier.minPoints - totalPoints : 0;
 
     // Format history
-    const history = user.rewardPoints.map(rp => ({
+    const history = recentPoints.map((rp: any) => ({
       id: rp.id,
       points: rp.points,
       type: rp.type,
@@ -66,6 +84,9 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         totalPoints,
+        pointsValueRate,
+        pointsPerPurchase,
+        pointsValue: totalPoints * pointsValueRate, // total UGX value of points
         currentTier: currentTier ? {
           id: currentTier.id,
           name: currentTier.name,
@@ -119,8 +140,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Insufficient points' }, { status: 400 });
     }
 
-    // Calculate discount value (100 points = UGX 5,000)
-    const discountValue = Math.floor(pointsToRedeem / 100) * 5000;
+    // Get points value rate from settings
+    let pointsValueRate = 10;
+    try {
+      const pvr = await prisma.siteSetting.findUnique({ where: { key: 'pointsValueRate' } });
+      if (pvr) pointsValueRate = parseInt(pvr.value) || 10;
+    } catch {}
+
+    // Calculate discount value dynamically
+    const discountValue = pointsToRedeem * pointsValueRate;
 
     // Create redemption record (negative points)
     const redemption = await prisma.rewardPoint.create({

@@ -25,6 +25,7 @@ const menuItems = [
   { name: 'Promotions', href: '/admin/promotions', icon: 'fa-bullhorn' },
   { name: 'Rewards', href: '/admin/rewards', icon: 'fa-crown' },
   { name: 'Gallery', href: '/admin/gallery', icon: 'fa-images' },
+  { name: 'Shipping', href: '/admin/shipping', icon: 'fa-truck' },
   { name: 'Content Blocks', href: '/admin/content-blocks', icon: 'fa-cube' },
   { name: 'Reports', href: '/admin/reports', icon: 'fa-chart-bar' },
   { name: 'Settings', href: '/admin/settings', icon: 'fa-cog' },

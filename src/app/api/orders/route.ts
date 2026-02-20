@@ -185,18 +185,26 @@ export async function POST(request: NextRequest) {
     // Apply reward points if user is logged in
     let pointsUsed = 0;
     let pointsDiscount = 0;
-    if (session?.user?.id && useRewardPoints) {
+    const pointsRedeemed = body.pointsRedeemed || 0;
+    const clientPointsDiscount = body.pointsDiscount || 0;
+    
+    if (session?.user?.id && (useRewardPoints || pointsRedeemed > 0)) {
       const userPoints = await prisma.rewardPoint.aggregate({
         where: { userId: session.user.id },
         _sum: { points: true },
       });
       
       const availablePoints = userPoints._sum.points || 0;
-      if (availablePoints > 0) {
-        // 100 points = 5000 UGX
+      
+      if (pointsRedeemed > 0 && pointsRedeemed <= availablePoints) {
+        // Use exact points from checkout
+        pointsUsed = pointsRedeemed;
+        pointsDiscount = clientPointsDiscount || (pointsRedeemed * 10); // default 10 UGX per point
+      } else if (useRewardPoints && availablePoints > 0) {
+        // Legacy: auto-calculate
         const maxPointsDiscount = Math.floor(availablePoints / 100) * 5000;
         pointsDiscount = Math.min(maxPointsDiscount, subtotal - discount);
-        pointsUsed = Math.ceil(pointsDiscount / 50); // 50 UGX per point
+        pointsUsed = Math.ceil(pointsDiscount / 50);
       }
     }
     
@@ -328,6 +336,41 @@ export async function POST(request: NextRequest) {
           soldCount: { increment: item.quantity },
         },
       });
+    }
+    
+    // Award reward points for purchase (dynamic rate from settings)
+    if (session?.user?.id) {
+      try {
+        let earnRate = 1000; // default: 1 point per 1000 UGX
+        let pointsExpiryDays = 365;
+        try {
+          const earnSettings = await prisma.siteSetting.findMany({
+            where: { key: { in: ['pointsPerPurchase', 'pointsExpiryDays'] } },
+          });
+          for (const s of earnSettings) {
+            if (s.key === 'pointsPerPurchase') earnRate = parseInt(s.value) || 1000;
+            if (s.key === 'pointsExpiryDays') pointsExpiryDays = parseInt(s.value) || 365;
+          }
+        } catch {}
+        const pointsEarned = Math.floor(subtotal / earnRate);
+        if (pointsEarned > 0) {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + pointsExpiryDays);
+          
+          await prisma.rewardPoint.create({
+            data: {
+              userId: session.user.id,
+              points: pointsEarned,
+              type: 'EARNED_PURCHASE',
+              description: `Earned from order ${order.orderNumber} (${subtotal.toLocaleString()} UGX)`,
+              orderId: order.id,
+              expiresAt,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Error awarding points:', e);
+      }
     }
     
     // Clear user's cart if logged in

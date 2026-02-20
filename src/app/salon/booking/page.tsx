@@ -67,7 +67,7 @@ function BookingContent() {
   const [step, setStep] = useState(1);
   const [services, setServices] = useState<SalonService[]>(fallbackServices);
   const [stylistsList, setStylistsList] = useState<Stylist[]>(fallbackStylists);
-  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedStylist, setSelectedStylist] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
@@ -82,6 +82,8 @@ function BookingContent() {
   const [submitError, setSubmitError] = useState('');
   const [appointmentNumber, setAppointmentNumber] = useState('');
   const [loadingServices, setLoadingServices] = useState(true);
+  const [bookedSlots, setBookedSlots] = useState<{start: string; end: string}[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Fetch services from API
   useEffect(() => {
@@ -94,7 +96,7 @@ function BookingContent() {
         const servicesData = await servicesRes.json();
         const stylistsData = await stylistsRes.json();
 
-        if (servicesData.success && servicesData.data?.length > 0) {
+          if (servicesData.success && servicesData.data?.length > 0) {
           const mapped = servicesData.data.map((s: any) => ({
             id: s.id,
             name: s.name,
@@ -104,14 +106,13 @@ function BookingContent() {
             description: s.description,
           }));
           setServices(mapped);
-          // Pre-select if query param matches
           if (preselectedService) {
             const match = mapped.find((s: SalonService) => s.name === preselectedService);
-            if (match) setSelectedService(match.id);
+            if (match) setSelectedServices([match.id]);
           }
         } else if (preselectedService) {
           const match = fallbackServices.find(s => s.name === preselectedService);
-          if (match) setSelectedService(match.id);
+          if (match) setSelectedServices([match.id]);
         }
 
         if (stylistsData.success && stylistsData.data?.length > 0) {
@@ -127,7 +128,7 @@ function BookingContent() {
         // Use fallback data
         if (preselectedService) {
           const match = fallbackServices.find(s => s.name === preselectedService);
-          if (match) setSelectedService(match.id);
+          if (match) setSelectedServices([match.id]);
         }
       } finally {
         setLoadingServices(false);
@@ -169,13 +170,50 @@ function BookingContent() {
   };
 
   const availableDates = getAvailableDates();
-  const selectedServiceData = services.find(s => s.id === selectedService);
+  const selectedServicesData = services.filter(s => selectedServices.includes(s.id));
+  const selectedServiceData = selectedServicesData[0]; // primary service for compatibility
   const selectedStylistData = stylistsList.find(s => s.id === selectedStylist);
-  const categoryName = selectedServiceData?.category?.name || '';
+  const totalPrice = selectedServicesData.reduce((sum, s) => sum + s.price, 0);
+  const totalDuration = selectedServicesData.reduce((sum, s) => sum + s.duration, 0);
+  const categoryName = selectedServicesData.map(s => s.category?.name).filter(Boolean)[0] || '';
 
-  const filteredStylists = categoryName
-    ? stylistsList.filter(s => s.specialty.toLowerCase().includes(categoryName.toLowerCase()) || s.specialty === 'All')
-    : stylistsList;
+  // Show category-matched stylists first, but always show all if none match
+  const categoryMatched = categoryName
+    ? stylistsList.filter(s => s.specialty.toLowerCase().includes(categoryName.toLowerCase()) || s.specialty.toLowerCase() === 'all')
+    : [];
+  const filteredStylists = categoryMatched.length > 0 ? categoryMatched : stylistsList;
+
+  // Fetch booked slots when date or stylist changes
+  useEffect(() => {
+    if (!selectedDate) return;
+    setLoadingSlots(true);
+    const params = new URLSearchParams({ date: selectedDate });
+    if (selectedStylist && selectedStylist !== 'none') params.set('stylistId', selectedStylist);
+    fetch(`/api/appointments/availability?${params}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setBookedSlots(data.data?.bookedSlots || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingSlots(false));
+  }, [selectedDate, selectedStylist]);
+
+  // Check if a time slot is booked (uses total duration of all selected services)
+  const isSlotBooked = (time12: string): boolean => {
+    if (bookedSlots.length === 0 || selectedServices.length === 0) return false;
+    const t24 = convertTimeTo24(time12);
+    const duration = totalDuration || 60;
+    const [h, m] = t24.split(':').map(Number);
+    const endDate = new Date(2000, 0, 1, h, m + duration);
+    const slotEnd = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+    return bookedSlots.some(b => t24 < b.end && slotEnd > b.start);
+  };
+
+  const toggleService = (id: string) => {
+    setSelectedServices(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -185,13 +223,16 @@ function BookingContent() {
     try {
       const time24 = convertTimeTo24(selectedTime);
       const payload: any = {
-        serviceId: selectedService,
+        serviceId: selectedServices[0], // primary service
+        serviceIds: selectedServices, // all selected services
         date: selectedDate,
         appointmentTime: time24,
         notes: formData.notes,
         contactName: `${formData.firstName} ${formData.lastName}`,
         contactEmail: formData.email,
         contactPhone: formData.phone,
+        totalDuration,
+        totalAmount: totalPrice,
       };
       if (selectedStylist && selectedStylist !== 'none') {
         payload.stylistId = selectedStylist;
@@ -220,7 +261,7 @@ function BookingContent() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return selectedService !== null;
+      case 1: return selectedServices.length > 0;
       case 2: return selectedStylist !== null;
       case 3: return selectedDate !== '' && selectedTime !== '';
       case 4: return formData.firstName && formData.lastName && formData.email && formData.phone;
@@ -296,35 +337,46 @@ function BookingContent() {
                   {services.map((service) => (
                     <button
                       key={service.id}
-                      onClick={() => setSelectedService(service.id)}
+                      onClick={() => toggleService(service.id)}
                       className={`p-4 rounded-xl border-2 text-left transition-all ${
-                        selectedService === service.id
+                        selectedServices.includes(service.id)
                           ? 'border-primary bg-primary/5'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{service.name}</h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            <i className="far fa-clock mr-1"></i>
-                            {formatDuration(service.duration)}
-                          </p>
-                          {service.category?.name && (
-                            <span className="inline-block mt-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                              {service.category.name}
-                            </span>
-                          )}
+                        <div className="flex items-start gap-3">
+                          <div className={`w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                            selectedServices.includes(service.id) ? 'bg-primary border-primary' : 'border-gray-300'
+                          }`}>
+                            {selectedServices.includes(service.id) && <i className="fas fa-check text-white text-xs"></i>}
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{service.name}</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              <i className="far fa-clock mr-1"></i>
+                              {formatDuration(service.duration)}
+                            </p>
+                            {service.category?.name && (
+                              <span className="inline-block mt-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                {service.category.name}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="text-primary font-semibold">{formatPrice(service.price)}</span>
                       </div>
-                      {selectedService === service.id && (
-                        <div className="mt-2 text-primary text-sm">
-                          <i className="fas fa-check-circle mr-1"></i> Selected
-                        </div>
-                      )}
                     </button>
                   ))}
+                </div>
+              )}
+              {selectedServices.length > 0 && (
+                <div className="mt-4 bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{selectedServices.length} service{selectedServices.length > 1 ? 's' : ''} selected</span>
+                    <span className="font-semibold text-primary">{formatPrice(totalPrice)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Total duration: {formatDuration(totalDuration)}</p>
                 </div>
               )}
             </div>
@@ -414,21 +466,36 @@ function BookingContent() {
               {selectedDate && (
                 <div>
                   <h3 className="font-medium mb-4">Choose a Time</h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                    {timeSlots.map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                          selectedTime === time
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
+                  {loadingSlots ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+                      <span className="ml-2 text-sm text-gray-500">Checking availability...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {timeSlots.map((time) => {
+                        const booked = isSlotBooked(time);
+                        return (
+                          <button
+                            key={time}
+                            onClick={() => !booked && setSelectedTime(time)}
+                            disabled={booked}
+                            className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                              booked
+                                ? 'border-red-200 bg-red-50 text-red-300 cursor-not-allowed line-through'
+                                : selectedTime === time
+                                  ? 'border-primary bg-primary text-white'
+                                  : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            title={booked ? 'This slot is already booked' : ''}
+                          >
+                            {time}
+                            {booked && <span className="block text-[10px] no-underline">Booked</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -544,8 +611,8 @@ function BookingContent() {
                 <h3 className="font-semibold mb-4">Appointment Details</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Service:</span>
-                    <span className="font-medium">{selectedServiceData?.name}</span>
+                    <span className="text-gray-500">Service{selectedServicesData.length > 1 ? 's' : ''}:</span>
+                    <span className="font-medium text-right">{selectedServicesData.map(s => s.name).join(', ')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Stylist:</span>
@@ -560,12 +627,16 @@ function BookingContent() {
                     <span className="font-medium">{selectedTime}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-gray-500">Duration:</span>
+                    <span className="font-medium">{formatDuration(totalDuration)}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-gray-500">Customer:</span>
                     <span className="font-medium">{formData.firstName} {formData.lastName}</span>
                   </div>
                   <div className="flex justify-between pt-3 border-t border-gray-200">
                     <span className="text-gray-500">Total:</span>
-                    <span className="font-bold text-primary">{formatPrice(selectedServiceData?.price || 0)}</span>
+                    <span className="font-bold text-primary">{formatPrice(totalPrice)}</span>
                   </div>
                 </div>
               </div>
@@ -620,14 +691,16 @@ function BookingContent() {
           )}
 
           {/* Booking Summary Sidebar */}
-          {step < 5 && selectedService && (
+          {step < 5 && selectedServices.length > 0 && (
             <div className="mt-8 bg-white rounded-xl p-6 shadow-soft">
               <h3 className="font-semibold mb-4">Booking Summary</h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Service:</span>
-                  <span className="font-medium">{selectedServiceData?.name}</span>
-                </div>
+                {selectedServicesData.map(s => (
+                  <div key={s.id} className="flex justify-between">
+                    <span className="text-gray-500">{s.name}</span>
+                    <span className="font-medium">{formatPrice(s.price)}</span>
+                  </div>
+                ))}
                 {selectedStylist && selectedStylist !== 'none' && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Stylist:</span>
@@ -647,12 +720,12 @@ function BookingContent() {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Duration:</span>
-                  <span className="font-medium">{formatDuration(selectedServiceData?.duration || 0)}</span>
+                  <span className="text-gray-500">Total Duration:</span>
+                  <span className="font-medium">{formatDuration(totalDuration)}</span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-gray-200">
                   <span className="font-medium">Total:</span>
-                  <span className="font-bold text-primary">{formatPrice(selectedServiceData?.price || 0)}</span>
+                  <span className="font-bold text-primary">{formatPrice(totalPrice)}</span>
                 </div>
               </div>
             </div>

@@ -85,6 +85,38 @@ export async function POST(request: NextRequest) {
     //   });
     // }
     
+    // Award signup points
+    try {
+      let signupPoints = 50; // default
+      let pointsExpiryDays = 365; // default 1 year
+      try {
+        const settings = await prisma.siteSetting.findMany({
+          where: { key: { in: ['pointsPerSignup', 'pointsExpiryDays'] } },
+        });
+        for (const s of settings) {
+          if (s.key === 'pointsPerSignup') signupPoints = parseInt(s.value) || 50;
+          if (s.key === 'pointsExpiryDays') pointsExpiryDays = parseInt(s.value) || 365;
+        }
+      } catch {}
+      
+      if (signupPoints > 0) {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + pointsExpiryDays);
+        
+        await prisma.rewardPoint.create({
+          data: {
+            userId: user.id,
+            points: signupPoints,
+            type: 'EARNED_SIGNUP',
+            description: `Welcome bonus for signing up`,
+            expiresAt,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Error awarding signup points:', e);
+    }
+
     // Log activity
     await prisma.activityLog.create({
       data: {

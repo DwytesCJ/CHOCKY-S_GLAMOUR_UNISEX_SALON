@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
     
     const {
       serviceId,
+      serviceIds,
       stylistId,
       date,
       appointmentTime,
@@ -96,6 +97,8 @@ export async function POST(request: NextRequest) {
       contactName,
       contactEmail,
       contactPhone,
+      totalDuration: clientTotalDuration,
+      totalAmount: clientTotalAmount,
     } = body;
 
     // Support both field naming conventions
@@ -104,23 +107,41 @@ export async function POST(request: NextRequest) {
     const finalPhone = contactPhone || customerPhone || '';
     
     // Validate required fields
-    if (!serviceId || !date || !appointmentTime) {
+    const primaryServiceId = serviceId || (serviceIds && serviceIds[0]);
+    if (!primaryServiceId || !date || !appointmentTime) {
       return NextResponse.json(
         { success: false, error: 'Service, date, and time are required' },
         { status: 400 }
       );
     }
     
-    // Get service details
+    // Get service details - try DB first, fall back to client-provided data
     const service = await prisma.salonService.findUnique({
-      where: { id: serviceId },
+      where: { id: primaryServiceId },
     });
     
-    if (!service || !service.isActive) {
-      return NextResponse.json(
-        { success: false, error: 'Service not found or unavailable' },
-        { status: 404 }
-      );
+    // If service not found in DB (e.g. fallback IDs), use client-provided data
+    const serviceDuration = service?.duration || clientTotalDuration || 60;
+    const servicePrice = service ? Number(service.price) : (clientTotalAmount || 0);
+    const serviceName = service?.name || 'Salon Service';
+    
+    // For multi-service: calculate total duration and price
+    let finalDuration = serviceDuration;
+    let finalPrice = servicePrice;
+    
+    if (serviceIds && serviceIds.length > 1) {
+      const dbServices = await prisma.salonService.findMany({
+        where: { id: { in: serviceIds } },
+      });
+      
+      if (dbServices.length > 0) {
+        finalDuration = dbServices.reduce((sum, s) => sum + s.duration, 0);
+        finalPrice = dbServices.reduce((sum, s) => sum + Number(s.price), 0);
+      } else {
+        // Use client-provided totals for fallback services
+        finalDuration = clientTotalDuration || 60;
+        finalPrice = clientTotalAmount || 0;
+      }
     }
     
     // Parse appointment datetime
@@ -128,40 +149,78 @@ export async function POST(request: NextRequest) {
     const dateTime = new Date(date);
     dateTime.setHours(hours, minutes, 0, 0);
     
-    // Check if the time slot is available
-    const existingAppointment = await prisma.appointment.findFirst({
-      where: {
-        stylistId: stylistId || undefined,
-        date: dateTime,
-        status: { in: ['PENDING', 'CONFIRMED'] },
-      },
-    });
+    // Check for time range overlap conflicts
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const endTime24 = new Date(dateTime);
+    endTime24.setMinutes(endTime24.getMinutes() + finalDuration);
+    const newStart = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    const newEnd = `${endTime24.getHours().toString().padStart(2, '0')}:${endTime24.getMinutes().toString().padStart(2, '0')}`;
+
+    // Build conflict query - check same day, overlapping times
+    const conflictWhere: any = {
+      date: { gte: dayStart, lte: dayEnd },
+      status: { in: ['PENDING', 'CONFIRMED'] },
+    };
     
-    if (existingAppointment) {
+    // If stylist selected, check that stylist's schedule
+    if (stylistId && stylistId !== 'none') {
+      conflictWhere.stylistId = stylistId;
+    }
+
+    const existingAppointments = await prisma.appointment.findMany({
+      where: conflictWhere,
+      select: { id: true, startTime: true, endTime: true, stylistId: true },
+    });
+
+    // Check for time overlap
+    const hasConflict = existingAppointments.some(apt => {
+      const aptStart = apt.startTime || '00:00';
+      const aptEnd = apt.endTime || '23:59';
+      // Overlap: newStart < aptEnd AND newEnd > aptStart
+      return newStart < aptEnd && newEnd > aptStart;
+    });
+
+    if (hasConflict) {
       return NextResponse.json(
-        { success: false, error: 'This time slot is already booked' },
+        { success: false, error: 'This time slot conflicts with an existing appointment. Please choose a different time.' },
         { status: 400 }
       );
     }
     
-    // Calculate end time based on service duration
-    const endTime = new Date(dateTime);
-    endTime.setMinutes(endTime.getMinutes() + service.duration);
-    
     // Build appointment data
     const appointmentData: any = {
       appointmentNumber: generateAppointmentNumber(),
-      serviceId,
       date: dateTime,
-      startTime: appointmentTime,
-      endTime: `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`,
-      totalAmount: Number(service.price),
+      startTime: newStart,
+      endTime: newEnd,
+      totalAmount: finalPrice,
       status: 'PENDING',
       notes: notes || '',
       contactName: finalName,
       contactEmail: finalEmail,
       contactPhone: finalPhone,
     };
+
+    // Only set serviceId if the service exists in DB
+    if (service) {
+      appointmentData.serviceId = primaryServiceId;
+    }
+    
+    // Store multi-service info in notes if multiple services selected
+    if (serviceIds && serviceIds.length > 1) {
+      const dbServices = await prisma.salonService.findMany({
+        where: { id: { in: serviceIds } },
+        select: { name: true },
+      });
+      if (dbServices.length > 0) {
+        const serviceNames = dbServices.map(s => s.name).join(', ');
+        appointmentData.notes = `Services: ${serviceNames}${notes ? '. ' + notes : ''}`;
+      }
+    }
 
     // Link to user if authenticated
     if (session?.user?.id) {
@@ -193,7 +252,7 @@ export async function POST(request: NextRequest) {
             entityId: appointment.id,
             details: JSON.stringify({
               appointmentNumber: appointment.appointmentNumber,
-              service: service.name,
+              service: serviceName,
               date: dateTime.toISOString(),
             }),
           },
